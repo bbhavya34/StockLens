@@ -4,21 +4,23 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Menu, ScanSearch } from "lucide-react";
-import { GithubIcon } from "@/components/icons/github-icon";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/components/auth/auth-provider";
 
 const navLinks = [
   { label: "Product", href: "#features" },
   { label: "AI Agents", href: "#agents" },
   { label: "Research", href: "#explainability" },
   { label: "Portfolio", href: "#portfolio" },
-  { label: "Open Source", href: "#open-source" },
 ];
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const { session, profile } = useAuth();
+  const appHref = session ? "/profile" : "/auth";
+  const appLabel = session ? profile?.display_name || "Profile" : "Login / Sign up";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -37,35 +39,54 @@ export function Navbar() {
       }`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="#" className="flex items-center gap-2" aria-label="StockLens home">
-          <span className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-border-strong bg-surface-2">
-            <ScanSearch className="h-4 w-4 text-foreground" strokeWidth={2} />
-            <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald ring-2 ring-background" />
-          </span>
-          <span className="font-display text-[15px] font-semibold tracking-tight">StockLens</span>
-        </Link>
+        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+          <Link href="#" className="flex items-center gap-2" aria-label="StockLens home">
+            <span className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-border-strong bg-surface-2">
+              <ScanSearch className="h-4 w-4 text-foreground" strokeWidth={2} />
+              <motion.span
+                animate={{ scale: [1, 1.35, 1], opacity: [0.8, 1, 0.8] }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald ring-2 ring-background"
+              />
+            </span>
+            <span className="font-display text-[15px] font-semibold tracking-tight">StockLens</span>
+          </Link>
+        </motion.div>
 
-        <nav className="hidden items-center gap-8 md:flex" aria-label="Primary">
+        <motion.nav
+          initial="hidden"
+          animate="visible"
+          variants={{ visible: { transition: { staggerChildren: 0.07, delayChildren: 0.15 } } }}
+          className="hidden items-center gap-8 md:flex"
+          aria-label="Primary"
+        >
           {navLinks.map((link) => (
-            <Link
+            <motion.div
               key={link.label}
-              href={link.href}
-              className="text-sm text-muted-2 transition-colors hover:text-foreground"
+              variants={{ hidden: { y: -8, opacity: 0 }, visible: { y: 0, opacity: 1 } }}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2 }}
             >
-              {link.label}
-            </Link>
+              <Link
+                href={link.href}
+                className="relative text-sm text-muted-2 transition-colors after:absolute after:-bottom-1 after:left-0 after:h-px after:w-full after:origin-left after:scale-x-0 after:bg-emerald after:transition-transform hover:text-foreground hover:after:scale-x-100"
+              >
+                {link.label}
+              </Link>
+            </motion.div>
           ))}
-        </nav>
+        </motion.nav>
 
-        <div className="hidden items-center gap-3 md:flex">
-          <Button variant="ghost" size="sm" asChild>
-            <a href="https://github.com" target="_blank" rel="noreferrer" aria-label="View StockLens on GitHub">
-              <GithubIcon className="h-4 w-4" />
-              GitHub
-            </a>
-          </Button>
-          <Button size="sm">Launch App</Button>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.92 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3, type: "spring", stiffness: 240, damping: 18 }}
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.97 }}
+          className="hidden md:block"
+        >
+          <Button size="sm" asChild><Link href={appHref}>{appLabel}</Link></Button>
+        </motion.div>
 
         <Sheet>
           <SheetTrigger asChild>
@@ -77,24 +98,21 @@ export function Navbar() {
             <SheetTitle>Menu</SheetTitle>
             <nav className="mt-8 flex flex-col gap-1" aria-label="Mobile">
               {navLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="rounded-md px-2 py-3 text-sm text-muted-2 hover:bg-white/[0.05] hover:text-foreground"
-                >
-                  {link.label}
-                </Link>
+                <motion.div key={link.label} whileHover={{ x: 4 }} whileTap={{ scale: 0.98 }}>
+                  <Link
+                    href={link.href}
+                    className="block rounded-md px-2 py-3 text-sm text-muted-2 hover:bg-white/[0.05] hover:text-foreground"
+                  >
+                    {link.label}
+                  </Link>
+                </motion.div>
               ))}
             </nav>
             <Separator className="my-4" />
             <div className="flex flex-col gap-2">
-              <Button variant="secondary" asChild>
-                <a href="https://github.com" target="_blank" rel="noreferrer">
-                  <GithubIcon className="h-4 w-4" />
-                  GitHub
-                </a>
-              </Button>
-              <Button>Launch App</Button>
+              <motion.div whileTap={{ scale: 0.98 }}>
+                <Button className="w-full" asChild><Link href={appHref}>{appLabel}</Link></Button>
+              </motion.div>
             </div>
           </SheetContent>
         </Sheet>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuthProvider } from "@/components/auth/auth-provider";
 import "./globals.css";
 
 // Font loading note:
@@ -48,7 +49,7 @@ export default function RootLayout({
         }
         className="antialiased"
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

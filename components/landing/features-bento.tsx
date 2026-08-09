@@ -35,11 +35,20 @@ function BentoCard({
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -6, scale: 1.01 }}
       viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.45, delay }}
+      transition={{ duration: 0.35, delay, type: "spring", stiffness: 240, damping: 22 }}
       className={className}
     >
-      <Card className="group flex h-full flex-col p-5 transition-all hover:-translate-y-0.5 hover:border-border-strong">
+      <Card className="group relative flex h-full flex-col overflow-hidden p-5 transition-colors hover:border-emerald/30">
+        <motion.span
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-16 -top-16 h-32 w-32 rounded-full bg-emerald/10 blur-2xl"
+          initial={{ opacity: 0, scale: 0.6 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: delay + 0.15 }}
+        />
         <span className="text-[11px] font-medium uppercase tracking-wide text-emerald">{eyebrow}</span>
         <h3 className="mt-1.5 font-display text-base font-semibold">{title}</h3>
         <p className="mt-1.5 text-xs leading-relaxed text-muted">{description}</p>

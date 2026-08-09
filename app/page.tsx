@@ -9,7 +9,6 @@ import { ComparisonSection } from "@/components/landing/comparison-section";
 import { PortfolioSection } from "@/components/landing/portfolio-section";
 import { BacktestingSection } from "@/components/landing/backtesting-section";
 import { Workflow } from "@/components/landing/workflow";
-import { OpenSource } from "@/components/landing/open-source";
 import { FinalCta } from "@/components/landing/final-cta";
 import { Footer } from "@/components/landing/footer";
 
@@ -27,7 +26,6 @@ export default function Home() {
       <PortfolioSection />
       <BacktestingSection />
       <Workflow />
-      <OpenSource />
       <FinalCta />
       <Footer />
     </main>

@@ -34,15 +34,24 @@ export function Workflow() {
             return (
               <motion.div
                 key={step.title}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial="hidden"
+                whileInView="visible"
+                whileHover="hover"
+                variants={{
+                  hidden: { opacity: 0, y: 16 },
+                  visible: { opacity: 1, y: 0 },
+                  hover: { y: -6 },
+                }}
                 viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.4, delay: i * 0.08 }}
+                transition={{ duration: 0.4, delay: i * 0.08, type: "spring", stiffness: 220, damping: 20 }}
                 className="relative flex items-start gap-4 lg:flex-col lg:items-center lg:text-center"
               >
-                <span className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-strong bg-surface text-muted-2 lg:bg-background">
+                <motion.span
+                  variants={{ hover: { scale: 1.14, rotate: i % 2 === 0 ? 5 : -5 } }}
+                  className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-strong bg-surface text-muted-2 transition-colors hover:border-emerald/50 hover:text-emerald lg:bg-background"
+                >
                   <Icon className="h-4 w-4" />
-                </span>
+                </motion.span>
                 <div className="pt-1.5 lg:pt-0">
                   <p className="text-xs font-medium text-muted">Step {i + 1}</p>
                   <p className="mt-0.5 text-sm font-medium text-foreground">{step.title}</p>

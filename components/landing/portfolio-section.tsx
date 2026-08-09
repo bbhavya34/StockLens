@@ -60,13 +60,21 @@ export function PortfolioSection() {
               {metrics.map((metric) => {
                 const Icon = metric.icon;
                 return (
-                  <div key={metric.label} className="rounded-lg border border-border-subtle bg-white/[0.02] p-3">
+                  <motion.div
+                    key={metric.label}
+                    initial={{ opacity: 0, scale: 0.92 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    whileHover={{ y: -4, borderColor: "rgba(16,185,129,0.35)" }}
+                    viewport={{ once: true }}
+                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                    className="rounded-lg border border-border-subtle bg-white/[0.02] p-3"
+                  >
                     <div className="flex items-center gap-1.5 text-[11px] text-muted">
                       <Icon className={`h-3 w-3 ${metric.tone}`} />
                       {metric.label}
                     </div>
                     <p className={`mt-1 font-mono-tab text-base font-semibold ${metric.tone}`}>{metric.value}</p>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>

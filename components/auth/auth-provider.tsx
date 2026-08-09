@@ -21,6 +21,10 @@ export type StockLensProfile = {
   display_name: string;
   avatar_url: string;
   bio: string;
+  investment_amount: string | null;
+  monthly_contribution: string | null;
+  investment_goal: string;
+  existing_investments: string;
   experience_level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
   risk_tolerance: "CONSERVATIVE" | "MODERATE" | "AGGRESSIVE";
   investment_horizon: "SHORT_TERM" | "MEDIUM_TERM" | "LONG_TERM";

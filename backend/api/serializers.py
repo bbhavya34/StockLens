@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from rest_framework import serializers
 
 from .models import (
@@ -16,6 +18,20 @@ from .models import (
 class UserProfileSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source="user.email", read_only=True)
     username = serializers.CharField(source="user.username", read_only=True)
+    investment_amount = serializers.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        min_value=Decimal("0"),
+        allow_null=True,
+        required=False,
+    )
+    monthly_contribution = serializers.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        min_value=Decimal("0"),
+        allow_null=True,
+        required=False,
+    )
 
     class Meta:
         model = UserProfile
@@ -27,6 +43,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "display_name",
             "avatar_url",
             "bio",
+            "investment_amount",
+            "monthly_contribution",
+            "investment_goal",
+            "existing_investments",
             "experience_level",
             "risk_tolerance",
             "investment_horizon",

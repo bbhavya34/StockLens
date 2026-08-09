@@ -44,6 +44,20 @@ class UserProfile(models.Model):
     phone_number = models.CharField(max_length=32, blank=True)
     avatar_url = models.URLField(max_length=1000, blank=True)
     bio = models.TextField(blank=True, max_length=500)
+    investment_amount = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    monthly_contribution = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    investment_goal = models.TextField(blank=True, max_length=300)
+    existing_investments = models.TextField(blank=True, max_length=500)
     experience_level = models.CharField(
         max_length=20,
         choices=ExperienceLevel.choices,
@@ -65,6 +79,18 @@ class UserProfile(models.Model):
     onboarding_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(investment_amount__gte=0),
+                name="profile_investment_amount_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(monthly_contribution__gte=0),
+                name="profile_monthly_contribution_nonnegative",
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.display_name or self.user.get_username()

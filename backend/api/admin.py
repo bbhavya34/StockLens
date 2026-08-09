@@ -21,6 +21,7 @@ class UserProfileAdmin(admin.ModelAdmin):
         "auth_provider",
         "experience_level",
         "risk_tolerance",
+        "investment_horizon",
         "onboarding_completed",
         "updated_at",
     )

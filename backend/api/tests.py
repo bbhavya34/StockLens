@@ -104,6 +104,10 @@ class SupabaseAuthenticationTests(APITestCase):
                 "experience_level": "INTERMEDIATE",
                 "risk_tolerance": "MODERATE",
                 "investment_horizon": "LONG_TERM",
+                "investment_amount": "500000.00",
+                "monthly_contribution": "25000.00",
+                "investment_goal": "Build a long-term retirement portfolio",
+                "existing_investments": "Index funds and Indian equities",
                 "preferred_market": "India",
                 "interests": ["Technology", "Long-term investing"],
                 "onboarding_completed": True,
@@ -113,4 +117,29 @@ class SupabaseAuthenticationTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["experience_level"], "INTERMEDIATE")
+        self.assertEqual(response.json()["investment_amount"], "500000.00")
+        self.assertEqual(response.json()["monthly_contribution"], "25000.00")
+        self.assertEqual(
+            response.json()["investment_goal"],
+            "Build a long-term retirement portfolio",
+        )
         self.assertTrue(response.json()["onboarding_completed"])
+
+    @patch("api.authentication._fetch_supabase_user")
+    def test_profile_rejects_negative_investment_values(self, fetch_user) -> None:
+        fetch_user.return_value = {
+            "id": str(uuid4()),
+            "email": "investor@example.com",
+            "user_metadata": {},
+            "app_metadata": {"provider": "google"},
+        }
+        self.client.credentials(HTTP_AUTHORIZATION="Bearer valid-test-token")
+
+        response = self.client.patch(
+            "/api/profile/",
+            {"investment_amount": "-1.00"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("investment_amount", response.json())

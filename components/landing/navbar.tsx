@@ -19,7 +19,7 @@ const navLinks = [
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const { session, profile } = useAuth();
-  const appHref = session ? "/profile" : "/auth";
+  const appHref = session ? "/profile" : "/auth/login";
   const appLabel = session ? profile?.display_name || "Profile" : "Login / Sign up";
 
   useEffect(() => {

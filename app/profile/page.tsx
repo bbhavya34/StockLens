@@ -189,7 +189,7 @@ export default function ProfilePage() {
           <UserRound className="mx-auto mb-4 h-8 w-8 text-emerald" />
           <h1 className="font-display text-2xl font-semibold">Sign in to create your profile</h1>
           <p className="mt-2 text-sm text-muted-2">Your preferences personalize research depth, risk context, and market focus.</p>
-          <Button className="mt-6" asChild><Link href="/auth">Continue to sign in</Link></Button>
+          <Button className="mt-6" asChild><Link href="/auth/login">Continue to sign in</Link></Button>
         </motion.div>
       </main>
     );
@@ -243,7 +243,7 @@ export default function ProfilePage() {
                 {(profile?.display_name || profile?.email || "S").slice(0, 2).toUpperCase()}
               </div>
               <h1 className="mt-4 font-display text-xl font-semibold">{profile?.display_name || "Your StockLens profile"}</h1>
-              <p className="mt-1 break-all text-sm text-muted-2">{profile?.email || profile?.phone_number}</p>
+              <p className="mt-1 break-all text-sm text-muted-2">{profile?.email}</p>
               <div className="mt-5 space-y-3 border-t border-border-subtle pt-5 text-sm">
                 <ProfileRow label="Experience" value={profile?.experience_level.toLowerCase() || "Beginner"} />
                 <ProfileRow label="Horizon" value={(profile?.investment_horizon || "LONG_TERM").replace("_", " ").toLowerCase()} />

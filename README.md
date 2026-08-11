@@ -58,9 +58,9 @@ The frontend API helper in `lib/api.ts` reads `NEXT_PUBLIC_API_BASE_URL`. Do not
 the backend origin in components. Django permits `http://localhost:3000` through CORS by
 default; override `CORS_ALLOWED_ORIGINS` with a comma-separated list when needed.
 
-Google OAuth, phone OTP, and personalized profiles use Supabase Auth. Follow the complete
-dashboard setup in [`docs/authentication.md`](docs/authentication.md), then open
-`http://localhost:3000/auth`.
+Email/password authentication and personalized profiles use Supabase Auth. Follow the
+complete dashboard setup in [`docs/authentication.md`](docs/authentication.md), then open
+`http://localhost:3000/auth/signup` for a new account or `/auth/login` to sign in.
 
 Optional Django environment variables:
 
@@ -80,10 +80,10 @@ watchlists, and alerts require authentication. Their querysets are always restri
 the current owner. Private analysis reports are only visible to their owner; reports made
 without a user are public.
 
-The Next.js flow supports Google OAuth and phone OTP. Django validates the Supabase access
-token before provisioning a local user and owner-only research profile. Provider setup,
-production redirect domains, SMS delivery, rate limits, and CAPTCHA must be configured in
-your Supabase project.
+The Next.js flow uses separate email/password sign-up and login pages. Django validates the
+Supabase access token before provisioning a local user and owner-only research profile on
+the first login. Email delivery, production redirect domains, password rules, rate limits,
+and CAPTCHA must be configured in your Supabase project.
 
 ## Verification
 

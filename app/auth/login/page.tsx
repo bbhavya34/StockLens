@@ -34,6 +34,22 @@ function LoginForm() {
   });
   const [error, setError] = useState<string | null>(null);
 
+  async function signInWithGoogle() {
+    setError(null);
+    setMessage(null);
+    setBusy(true);
+    try {
+      const { error: oauthError } = await getSupabaseBrowserClient().auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (oauthError) throw oauthError;
+    } catch (authError) {
+      setError(authError instanceof Error ? authError.message : "Google sign-in failed.");
+      setBusy(false);
+    }
+  }
+
   async function login(event: FormEvent) {
     event.preventDefault();
     setError(null);
@@ -100,6 +116,15 @@ function LoginForm() {
               <p className="font-display text-xl font-semibold">Welcome back</p>
               <p className="text-sm text-muted-2">Sign in to continue to StockLens</p>
             </div>
+          </div>
+
+          <Button type="button" className="h-11 w-full" variant="secondary" onClick={signInWithGoogle} disabled={busy || resetting}>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-bold text-neutral-900">G</span>
+            {busy ? "Connecting…" : "Continue with Google"}
+          </Button>
+
+          <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-muted">
+            <span className="h-px flex-1 bg-border-subtle" /> or use email <span className="h-px flex-1 bg-border-subtle" />
           </div>
 
           <form onSubmit={login} className="space-y-4">

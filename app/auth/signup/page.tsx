@@ -16,6 +16,21 @@ export default function SignupPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  async function signUpWithGoogle() {
+    setError(null);
+    setBusy(true);
+    try {
+      const { error: oauthError } = await getSupabaseBrowserClient().auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (oauthError) throw oauthError;
+    } catch (authError) {
+      setError(authError instanceof Error ? authError.message : "Google sign-up failed.");
+      setBusy(false);
+    }
+  }
+
   async function signup(event: FormEvent) {
     event.preventDefault();
     setError(null);
@@ -77,6 +92,15 @@ export default function SignupPage() {
               <p className="font-display text-xl font-semibold">Create your account</p>
               <p className="text-sm text-muted-2">Start your personalized StockLens profile</p>
             </div>
+          </div>
+
+          <Button type="button" className="h-11 w-full" variant="secondary" onClick={signUpWithGoogle} disabled={busy}>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-bold text-neutral-900">G</span>
+            {busy ? "Connecting…" : "Continue with Google"}
+          </Button>
+
+          <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-muted">
+            <span className="h-px flex-1 bg-border-subtle" /> or use email <span className="h-px flex-1 bg-border-subtle" />
           </div>
 
           <form onSubmit={signup} className="space-y-4">

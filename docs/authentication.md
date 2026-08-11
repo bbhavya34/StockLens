@@ -1,7 +1,7 @@
 # StockLens authentication setup
 
-StockLens uses Supabase Auth for email/password identity and Django REST Framework for
-authorization. New users create an account on the dedicated sign-up page and are redirected
+StockLens uses Supabase Auth for Google OAuth or email/password identity and Django REST
+Framework for authorization. Email/password users create an account on the dedicated sign-up page and are redirected
 to the login page. On their first authenticated API request, Django validates the access token
 with Supabase and provisions a local user and private StockLens profile. Passwords, refresh
 tokens, and provider tokens are not stored by Django.
@@ -47,10 +47,19 @@ In **Supabase Dashboard > Authentication > URL Configuration** set:
 - Site URL: `http://localhost:3000`
 - Additional redirect URL: `http://localhost:3000/auth/login`
 - Additional redirect URL: `http://localhost:3000/auth/reset-password`
+- Additional redirect URL: `http://localhost:3000/auth/callback`
 
 Add the equivalent HTTPS production URL before deployment.
 
-## 4. Run Django
+## 4. Enable Google authentication
+
+1. Open **Supabase Dashboard > Authentication > Providers > Google**.
+2. Enable Google and copy the Supabase callback URL shown there.
+3. Configure a Google OAuth web client and add that Supabase callback URL as an authorized
+   redirect URI in Google Cloud Console.
+4. Add the Google client ID and client secret to the Supabase Google provider settings.
+
+## 5. Run Django
 
 ```powershell
 cd backend
@@ -59,7 +68,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-## 5. Run Next.js
+## 6. Run Next.js
 
 ```powershell
 Copy-Item .env.local.example .env.local

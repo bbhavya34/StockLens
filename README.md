@@ -53,7 +53,76 @@ Instead of sending a stock question directly to an LLM, StockLens routes it thro
 
 ---
 
-## 02 · System Architecture
+## 02 · Why StockLens
+
+**Traditional market platforms provide:**
+
+```
+Charts + Metrics + News
+```
+
+**Generic AI products provide:**
+
+```
+Prompt + Context → Generated Answer
+```
+
+**StockLens combines both into an evidence-driven intelligence pipeline:**
+
+```mermaid
+flowchart TB
+    A[Real Market Data] --> B[Specialized Agents]
+    B --> C[Evidence Validation]
+    C --> D[Cross-Domain Reasoning]
+    D --> E[Explainable Research]
+    E --> F[Investor Intelligence]
+
+    classDef step fill:#1E293B,stroke:#0F172A,color:#fff
+    classDef final fill:#3B4B6B,stroke:#1E293B,color:#fff
+
+    class A,B,C,D,E step
+    class F final
+```
+
+> StockLens is not an AI chatbot that talks about stocks. It is a financial intelligence system that builds an evidence layer first, reasons across multiple research domains, and then explains every major conclusion.
+
+<br/>
+
+---
+
+## 03 · Roadmap
+
+```mermaid
+flowchart TB
+    A[StockLens MVP] --> B[Market Data]
+    A --> C[Fundamentals]
+    A --> D[News and Sentiment]
+    B --> E[Technical and Risk]
+    C --> E
+    D --> E
+    E --> F[Evidence-Grounded AI]
+    F --> G[Real-Time Events]
+    G --> H[Smart Alerts]
+    G --> I[Portfolio Risk]
+    H --> J[Research Memory]
+    I --> J
+    J --> K[Personalization]
+    K --> L[Backtesting and Intelligence]
+
+    classDef base fill:#1E293B,stroke:#0F172A,color:#fff
+    classDef mid fill:#334155,stroke:#0F172A,color:#fff
+    classDef final fill:#0F4C4C,stroke:#0B3A3A,color:#fff
+
+    class A,B,C,D base
+    class E,F,G,H,I,J,K mid
+    class L final
+```
+
+<br/>
+
+---
+
+## 04 · System Architecture
 
 ```mermaid
 flowchart TB
@@ -119,7 +188,7 @@ AI Synthesis → Explainability → Persistent Research → Investor Actions
 
 ---
 
-## 03 · Core Workflow
+## 05 · Core Workflow
 
 | Step | Stage | System Responsibility |
 |:---:|---|---|
@@ -171,7 +240,7 @@ flowchart TB
 
 ---
 
-## 04 · Evidence-First AI
+## 06 · Evidence-First AI
 
 **Traditional AI approach**
 
@@ -199,7 +268,7 @@ Validation → LLM Reasoning → Explainable Research
 
 ---
 
-## 05 · Multi-Agent Intelligence
+## 07 · Multi-Agent Intelligence
 
 | Agent | Owns | Key Outputs |
 |---|---|---|
@@ -222,7 +291,7 @@ Each agent has a clear boundary, which keeps the system modular, testable, and p
 
 ---
 
-## 06 · Technology Stack
+## 08 · Technology Stack
 
 **Frontend**
 
@@ -262,7 +331,7 @@ Each agent has a clear boundary, which keeps the system modular, testable, and p
 
 ---
 
-## 07 · Data Architecture
+## 09 · Database Schema
 
 ```mermaid
 erDiagram
@@ -377,7 +446,7 @@ The ownership model keeps private financial resources isolated at the database a
 
 ---
 
-## 08 · API Design
+## 10 · API Design
 
 **Public Research**
 
@@ -427,7 +496,7 @@ DELETE /api/alerts/{id}/
 
 ---
 
-## 09 · Security and Ownership
+## 11 · Security and Ownership
 
 ```mermaid
 flowchart TB
@@ -459,7 +528,7 @@ flowchart TB
 
 ---
 
-## 10 · Portfolio Intelligence
+## 12 · Portfolio Intelligence
 
 StockLens is designed to evolve from stock research into investor-level intelligence.
 
@@ -493,31 +562,7 @@ flowchart TB
 
 ---
 
-## 11 · Production Safety
-
-StockLens follows a fail-closed intelligence model.
-
-| Condition | Response |
-|---|:---:|
-| Invalid input | `400` |
-| Authentication failure | `401` |
-| Authorization failure | `403` |
-| Resource unavailable | `404` |
-| Synthesis unavailable | `501` |
-| Provider unavailable | `503` |
-| Successful read/update | `200` |
-| Resource created | `201` |
-| Resource deleted | `204` |
-
-> **Core rule.** Missing evidence is acceptable. Fabricated evidence is not.
-
-Provider integrations are isolated behind adapters so the core system remains independent of any single data vendor.
-
-<br/>
-
----
-
-## 12 · Development
+## 13 · Development
 
 **Backend**
 
@@ -564,86 +609,25 @@ npm run build
 
 ---
 
-## 13 · Roadmap
+## 14 · Production Safety
 
-```mermaid
-flowchart TB
-    A[StockLens MVP] --> B[Market Data]
-    A --> C[Fundamentals]
-    A --> D[News and Sentiment]
-    B --> E[Technical and Risk]
-    C --> E
-    D --> E
-    E --> F[Evidence-Grounded AI]
-    F --> G[Real-Time Events]
-    G --> H[Smart Alerts]
-    G --> I[Portfolio Risk]
-    H --> J[Research Memory]
-    I --> J
-    J --> K[Personalization]
-    K --> L[Backtesting and Intelligence]
+StockLens follows a fail-closed intelligence model.
 
-    classDef base fill:#1E293B,stroke:#0F172A,color:#fff
-    classDef mid fill:#334155,stroke:#0F172A,color:#fff
-    classDef final fill:#0F4C4C,stroke:#0B3A3A,color:#fff
+| Condition | Response |
+|---|:---:|
+| Invalid input | `400` |
+| Authentication failure | `401` |
+| Authorization failure | `403` |
+| Resource unavailable | `404` |
+| Synthesis unavailable | `501` |
+| Provider unavailable | `503` |
+| Successful read/update | `200` |
+| Resource created | `201` |
+| Resource deleted | `204` |
 
-    class A,B,C,D base
-    class E,F,G,H,I,J,K mid
-    class L final
-```
+> **Core rule.** Missing evidence is acceptable. Fabricated evidence is not.
 
-<br/>
-
----
-
-## 14 · Engineering Principles
-
-| Principle | Decision |
-|---|---|
-| **Evidence over Assumptions** | AI reasons over validated data |
-| **Explainability over Black Box** | Conclusions remain traceable |
-| **Real Data over Fabricated Data** | Missing providers fail explicitly |
-| **Modularity over Lock-in** | Provider adapters isolate integrations |
-| **Parallelism over Bottlenecks** | Independent agents execute concurrently |
-| **Ownership over Shared State** | Private resources remain user-scoped |
-| **Safe Failure over Silent Failure** | Errors are explicit and structured |
-
-<br/>
-
----
-
-## 15 · Why StockLens
-
-**Traditional market platforms provide:**
-
-```
-Charts + Metrics + News
-```
-
-**Generic AI products provide:**
-
-```
-Prompt + Context → Generated Answer
-```
-
-**StockLens combines both into an evidence-driven intelligence pipeline:**
-
-```mermaid
-flowchart TB
-    A[Real Market Data] --> B[Specialized Agents]
-    B --> C[Evidence Validation]
-    C --> D[Cross-Domain Reasoning]
-    D --> E[Explainable Research]
-    E --> F[Investor Intelligence]
-
-    classDef step fill:#1E293B,stroke:#0F172A,color:#fff
-    classDef final fill:#3B4B6B,stroke:#1E293B,color:#fff
-
-    class A,B,C,D,E step
-    class F final
-```
-
-> StockLens is not an AI chatbot that talks about stocks. It is a financial intelligence system that builds an evidence layer first, reasons across multiple research domains, and then explains every major conclusion.
+Provider integrations are isolated behind adapters so the core system remains independent of any single data vendor.
 
 <br/>
 

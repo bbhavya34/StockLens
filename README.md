@@ -1,230 +1,445 @@
-# StockLens
+<div align="center">
 
-### Explainable AI Market Intelligence
+# **StockLens**
 
-> **StockLens is an evidence-driven market intelligence platform that combines multi-agent analysis, real market data, and explainable AI to turn financial signals into structured research.**
+### **Explainable AI Market Intelligence**
 
----
+**Evidence → Multi-Agent Analysis → Explainable Research → Investor Intelligence**
 
-## Overview
+<br>
 
-StockLens is designed around one principle:
+[![Next.js](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React_19-61DAFB?style=for-the-badge&logo=react&logoColor=111827)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Django](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=white)](https://www.djangoproject.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=111827)](https://supabase.com/)
 
-**AI should reason over evidence, not generate the evidence.**
-
-The platform combines:
-
-- Technical analysis
-- Fundamental analysis
-- News & sentiment
-- Risk intelligence
-- Multi-agent research
-- Explainable AI synthesis
-- Portfolio & watchlist intelligence
-- Threshold-based alerts
+</div>
 
 ---
 
-## Architecture
+# **01 · The Idea**
+
+StockLens is an **evidence-driven financial intelligence platform** that converts fragmented market information into structured, explainable research.
+
+Instead of sending a stock question directly to an LLM, StockLens builds a research pipeline:
+
+> **Collect → Normalize → Analyze → Validate → Reason → Explain**
+
+The model is a **reasoning layer**, not the source of market truth.
+
+### **What StockLens analyzes**
+
+- **Technical** — trend, momentum, indicators and volatility
+- **Fundamental** — earnings, valuation, growth and financial health
+- **News** — events, catalysts and sentiment
+- **Risk** — volatility, drawdown, leverage, liquidity and concentration
+- **Portfolio** — holdings, exposure and research context
+- **Monitoring** — watchlists and threshold-based alerts
+
+---
+
+# **02 · System Architecture**
 
 ```mermaid
-flowchart LR
-    U[Investor] --> FE[Next.js Web App]
+flowchart TB
+
+    %% Experience
+    U([Investor]) --> FE[Next.js Web App]
+
+    %% API
     FE --> API[Django REST API]
 
+    %% Identity
     API --> AUTH[Supabase Auth]
-    API --> O[Analysis Orchestrator]
+    API --> ACL[Authorization & Ownership]
 
-    O --> MD[Market Data Adapter]
-    O --> FD[Fundamentals Adapter]
-    O --> ND[News Adapter]
+    %% Intelligence
+    ACL --> ORCH[Analysis Orchestrator]
 
-    MD --> TA[Technical Agent]
-    FD --> FA[Fundamental Agent]
-    ND --> NA[News Agent]
-    O --> RA[Risk Agent]
+    %% Data acquisition
+    ORCH --> MD[Market Data Adapter]
+    ORCH --> FUND[Fundamentals Adapter]
+    ORCH --> NEWS[News & Sentiment Adapter]
 
-    TA --> E[Evidence Layer]
-    FA --> E
-    NA --> E
-    RA --> E
+    %% Agents
+    MD --> TECH[Technical Agent]
+    FUND --> FA[Fundamental Agent]
+    NEWS --> NA[News Agent]
+    ORCH --> RISK[Risk Agent]
 
-    E --> V[Evidence Validation]
-    V --> S[Research Synthesis Agent]
-    S --> X[Explainability Engine]
+    %% Evidence
+    TECH --> EVIDENCE[Evidence Layer]
+    FA --> EVIDENCE
+    NA --> EVIDENCE
+    RISK --> EVIDENCE
 
-    X --> DB[(Supabase PostgreSQL)]
-    DB --> FE
+    EVIDENCE --> VALIDATE[Evidence Validation]
 
-    DB --> P[Portfolio]
-    DB --> W[Watchlist]
-    DB --> AL[Alerts]
+    %% Synthesis
+    VALIDATE --> SYNTH[Research Synthesis Agent]
+    SYNTH --> EXPLAIN[Explainability Engine]
+
+    %% Persistence
+    EXPLAIN --> DB[(Supabase PostgreSQL)]
+
+    %% Product surfaces
+    DB --> REPORTS[Research Reports]
+    DB --> PORTFOLIO[Portfolio Intelligence]
+    DB --> WATCHLIST[Watchlists]
+    DB --> ALERTS[Alert Engine]
+
+    REPORTS --> FE
+    PORTFOLIO --> FE
+    WATCHLIST --> FE
+    ALERTS --> FE
 ```
 
----
-
-## Core Workflow
+### **Architecture in one line**
 
 ```text
-Investor
-   ↓
-Next.js Application
-   ↓
-Django API
-   ↓
-Authentication & Authorization
-   ↓
+Client
+  ↓
+API Gateway
+  ↓
+Identity + Authorization
+  ↓
 Analysis Orchestrator
-   ↓
-┌─────────────┬──────────────┬─────────────┐
-│ Market Data │ Fundamentals │ News        │
-└──────┬──────┴───────┬──────┴──────┬──────┘
-       ↓              ↓             ↓
-  Technical      Fundamental     News Agent
-     Agent          Agent
-       └──────────────┼─────────────┘
-                      ↓
-                  Risk Agent
-                      ↓
-               Evidence Layer
-                      ↓
-             Evidence Validation
-                      ↓
-             AI Research Synthesis
-                      ↓
-               Explainability
-                      ↓
-               Research Report
-                      ↓
-             PostgreSQL Storage
-                      ↓
-        Portfolio / Watchlist / Alerts
+  ↓
+Provider Adapters
+  ↓
+Specialized Agents
+  ↓
+Evidence Layer
+  ↓
+Validation
+  ↓
+AI Synthesis
+  ↓
+Explainability
+  ↓
+Persistent Research
+  ↓
+Investor Actions
 ```
-
-### How it works
-
-**01. Request** — Investor selects a stock or research action.
-
-**02. Resolve** — API validates the stock symbol against the canonical stock registry.
-
-**03. Collect** — Provider adapters collect market, fundamental and news data.
-
-**04. Analyze** — Specialized agents independently analyze their domain.
-
-**05. Validate** — Evidence is normalized, timestamped and checked before reaching the AI layer.
-
-**06. Synthesize** — The research agent reasons over validated evidence and produces a structured report.
-
-**07. Explain** — Conclusions are connected to the evidence supporting them.
-
-**08. Persist** — Reports and user-owned resources are stored in PostgreSQL.
-
-**09. Monitor** — Watchlists and alerts extend one-time research into continuous intelligence.
 
 ---
 
-# Multi-Agent Intelligence
+# **03 · Core Workflow**
 
-| Agent | Responsibility |
-|---|---|
-| **Technical Agent** | RSI, SMA/EMA, MACD, momentum, volatility, trend |
-| **Fundamental Agent** | Earnings, valuation, growth, margins, leverage, returns |
-| **News Agent** | News collection, event detection, sentiment |
-| **Risk Agent** | Drawdown, volatility, liquidity, leverage, concentration |
-| **Research Agent** | Cross-domain reasoning and final synthesis |
-| **Explainability Engine** | Maps conclusions back to supporting evidence |
+### **The complete research lifecycle**
 
-The LLM is intentionally placed **after the evidence layer**.
+| # | Stage | System Responsibility |
+|:--:|---|---|
+| **01** | **Request** | Investor initiates research for a stock |
+| **02** | **Resolve** | Symbol is mapped to the canonical `Stock` entity |
+| **03** | **Authenticate** | Supabase token is validated when applicable |
+| **04** | **Orchestrate** | Analysis Orchestrator creates the research pipeline |
+| **05** | **Acquire** | Market, fundamentals and news adapters collect source data |
+| **06** | **Analyze** | Technical, Fundamental, News and Risk agents work independently |
+| **07** | **Normalize** | Agent outputs become structured evidence |
+| **08** | **Validate** | Source, timestamp, completeness and consistency are checked |
+| **09** | **Synthesize** | Research Agent performs cross-domain reasoning |
+| **10** | **Explain** | Conclusions are connected to supporting evidence |
+| **11** | **Persist** | Research report is stored in PostgreSQL |
+| **12** | **Act** | Portfolio, watchlist and alert workflows use the research |
+
+### **Parallel analysis**
 
 ```text
-External Data
+                         RESEARCH REQUEST
+                                │
+                                ▼
+                      ANALYSIS ORCHESTRATOR
+                                │
+             ┌──────────────────┼──────────────────┐
+             │                  │                  │
+             ▼                  ▼                  ▼
+        MARKET DATA        FUNDAMENTALS           NEWS
+             │                  │                  │
+             ▼                  ▼                  ▼
+        TECHNICAL           FUNDAMENTAL       NEWS / SENTIMENT
+          AGENT                AGENT               AGENT
+             └──────────────────┼──────────────────┘
+                                │
+                                ▼
+                           RISK AGENT
+                                │
+                                ▼
+                       EVIDENCE AGGREGATION
+                                │
+                                ▼
+                       EVIDENCE VALIDATION
+                                │
+                                ▼
+                      RESEARCH SYNTHESIS
+                                │
+                                ▼
+                        EXPLAINABILITY
+                                │
+                                ▼
+                         FINAL REPORT
+```
+
+**Why parallel agents?**
+
+Independent research domains can execute concurrently, reducing unnecessary latency while keeping responsibilities isolated and testable.
+
+---
+
+# **04 · Evidence-First AI**
+
+### **Traditional AI**
+
+```text
+User Prompt
+     ↓
+    LLM
+     ↓
+Generated Opinion
+```
+
+### **StockLens**
+
+```text
+Real Sources
+     ↓
+Provider Adapters
      ↓
 Normalized Evidence
      ↓
+Specialized Analysis
+     ↓
 Validation
      ↓
-AI Reasoning
+LLM Reasoning
      ↓
-Explainable Output
+Explainable Research
+```
+
+### **Non-negotiable rule**
+
+> **StockLens never fabricates prices, indicators, fundamentals, news or confidence scores.**
+
+If a required provider is unavailable, the system returns a structured error instead of generating substitute data.
+
+```json
+{
+  "error": "market_data_provider_not_configured",
+  "detail": "The market_data provider is not configured."
+}
 ```
 
 ---
 
-# Technology Stack
+# **05 · Multi-Agent Intelligence**
 
-### Frontend
+| Agent | Owns | Key Outputs |
+|---|---|---|
+| **Technical Agent** | Market behavior | Trend, RSI, moving averages, MACD, momentum, volatility |
+| **Fundamental Agent** | Business quality | Earnings, valuation, growth, margins, leverage |
+| **News Agent** | External events | News, sentiment, catalysts, event impact |
+| **Risk Agent** | Downside analysis | Drawdown, volatility, liquidity, concentration |
+| **Synthesis Agent** | Cross-domain reasoning | Overall research view and summary |
+| **Explainability Engine** | Traceability | Conclusion → Evidence → Reason |
 
-<p>
-<img src="https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white">
-<img src="https://img.shields.io/badge/React_19-61DAFB?style=for-the-badge&logo=react&logoColor=111827">
-<img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
-<img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white">
-</p>
+### **Agent design**
 
-### Backend
+Each agent has a clear boundary:
 
-<p>
-<img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white">
-<img src="https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=white">
-<img src="https://img.shields.io/badge/DRF-A30000?style=for-the-badge">
-</p>
+```text
+Input Data
+    ↓
+Domain-Specific Agent
+    ↓
+Structured Findings
+    ↓
+Evidence References
+```
 
-### Data & Auth
-
-<p>
-<img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=111827">
-<img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white">
-</p>
-
-### AI & Analytics
-
-<p>
-<img src="https://img.shields.io/badge/Multi--Agent_AI-6D28D9?style=for-the-badge">
-<img src="https://img.shields.io/badge/Explainable_AI-0284C7?style=for-the-badge">
-<img src="https://img.shields.io/badge/Evidence--Grounded-047857?style=for-the-badge">
-<img src="https://img.shields.io/badge/Recharts-16A34A?style=for-the-badge">
-</p>
-
-**Frontend:** Next.js · React · TypeScript · Tailwind · Zustand · Recharts · Framer Motion
-
-**Backend:** Python · Django · Django REST Framework
-
-**Data:** Supabase PostgreSQL · Provider APIs
-
-**AI:** Multi-agent architecture · LLM synthesis · Explainability layer
+This keeps the system modular, testable and provider-independent.
 
 ---
 
-# Data Model
+# **06 · Technology Stack**
+
+<div align="center">
+
+### **Frontend**
+
+| **Technology** | **Role** |
+|---|---|
+| **Next.js 16** | Application framework |
+| **React 19** | UI layer |
+| **TypeScript** | Type-safe development |
+| **Tailwind CSS** | Design system |
+| **Zustand** | Client state |
+| **Recharts** | Market visualization |
+| **Framer Motion** | Interaction & motion |
+
+<br>
+
+### **Backend & Platform**
+
+| **Technology** | **Role** |
+|---|---|
+| **Python** | Backend runtime |
+| **Django** | Application framework |
+| **Django REST Framework** | API layer |
+| **Supabase Auth** | Authentication & identity |
+| **Supabase PostgreSQL** | Persistent data layer |
+
+<br>
+
+### **AI & Data**
+
+| **Layer** | **Architecture** |
+|---|---|
+| **Market Data** | Provider Adapter |
+| **Fundamentals** | Provider Adapter |
+| **News** | Provider Adapter |
+| **Technical Intelligence** | Technical Agent |
+| **Risk Intelligence** | Risk Agent |
+| **AI Research** | Evidence-Grounded LLM Synthesis |
+| **Explainability** | Evidence → Conclusion Mapping |
+
+</div>
+
+---
+
+# **07 · Data Architecture**
 
 ```mermaid
 erDiagram
-    USER ||--o| USER_PROFILE : has
-    USER ||--o{ PORTFOLIO : owns
-    USER ||--o{ WATCHLIST : owns
-    USER ||--o{ ALERT : creates
-    USER o|--o{ ANALYSIS_REPORT : requests
 
+    USER ||--o| USER_PROFILE : has
+
+    USER ||--o{ PORTFOLIO : owns
     PORTFOLIO ||--o{ PORTFOLIO_HOLDING : contains
     STOCK ||--o{ PORTFOLIO_HOLDING : identifies
 
+    USER ||--o{ WATCHLIST : owns
     WATCHLIST ||--o{ WATCHLIST_ITEM : contains
     STOCK ||--o{ WATCHLIST_ITEM : tracks
 
+    USER ||--o{ ALERT : creates
     STOCK ||--o{ ALERT : triggers
+
+    USER o|--o{ ANALYSIS_REPORT : requests
     STOCK ||--o{ ANALYSIS_REPORT : analyzed_in
+
     STOCK ||--o{ NEWS_ARTICLE : has
+
+    USER {
+        bigint id PK
+        string username UK
+        string email
+    }
+
+    USER_PROFILE {
+        bigint id PK
+        uuid supabase_user_id UK
+        string display_name
+        decimal investment_amount
+        string experience_level
+        string risk_tolerance
+        string investment_horizon
+        boolean onboarding_completed
+    }
+
+    STOCK {
+        bigint id PK
+        string symbol UK
+        string name
+        string exchange
+        string sector
+        string industry
+    }
+
+    PORTFOLIO {
+        bigint id PK
+        bigint user_id FK
+        string name
+        datetime created_at
+    }
+
+    PORTFOLIO_HOLDING {
+        bigint id PK
+        bigint portfolio_id FK
+        bigint stock_id FK
+        decimal quantity
+        decimal average_buy_price
+    }
+
+    WATCHLIST {
+        bigint id PK
+        bigint user_id FK
+        string name
+        datetime created_at
+    }
+
+    WATCHLIST_ITEM {
+        bigint id PK
+        bigint watchlist_id FK
+        bigint stock_id FK
+        datetime added_at
+    }
+
+    ALERT {
+        bigint id PK
+        bigint user_id FK
+        bigint stock_id FK
+        string alert_type
+        decimal threshold
+        boolean is_active
+        datetime triggered_at
+    }
+
+    ANALYSIS_REPORT {
+        bigint id PK
+        bigint stock_id FK
+        bigint user_id FK
+        json technical_analysis
+        json fundamental_analysis
+        json news_analysis
+        json risk_analysis
+        string overall_signal
+        text summary
+        datetime created_at
+    }
+
+    NEWS_ARTICLE {
+        bigint id PK
+        bigint stock_id FK
+        string title
+        string source
+        string url UK
+        datetime published_at
+        string sentiment
+        decimal sentiment_score
+    }
 ```
 
-Core entities:
+### **Data ownership**
 
-`User` · `UserProfile` · `Stock` · `Portfolio` · `PortfolioHolding` · `Watchlist` · `WatchlistItem` · `Alert` · `AnalysisReport` · `NewsArticle`
+```text
+User
+ │
+ ├── Profile
+ ├── Portfolio ─── Holdings ─── Stock
+ ├── Watchlist ─── Items ────── Stock
+ ├── Alerts ─────────────────── Stock
+ └── Research Reports ───────── Stock
+```
+
+The ownership model keeps private financial resources isolated at the database/queryset layer.
 
 ---
 
-# API
+# **08 · API Design**
 
-### Public Research
+### **Public Research**
 
 ```http
 GET  /api/health/
@@ -237,60 +452,130 @@ POST /api/stocks/{symbol}/analyze/
 GET  /api/analysis/{id}/
 ```
 
-### Authenticated
+### **Authenticated Resources**
 
 ```http
-GET/PATCH /api/profile/
+GET/PATCH                 /api/profile/
 GET/POST/PUT/PATCH/DELETE /api/portfolios/
 GET/POST/PUT/PATCH/DELETE /api/watchlists/
 GET/POST/PUT/PATCH/DELETE /api/alerts/
 ```
 
+### **API principles**
+
+- REST over HTTPS
+- JSON request/response format
+- Django trailing-slash convention
+- Bearer-token authentication
+- Owner-scoped querysets
+- Stable provider error envelope
+
 ---
 
-# Security
+# **09 · Security & Ownership**
 
 ```text
 Supabase Auth
-      ↓
-Bearer Token
-      ↓
+      │
+      ▼
+Access Token
+      │
+      ▼
 Django Validation
-      ↓
-Local User
-      ↓
-Owner-Scoped Resources
+      │
+      ▼
+Local User Provisioning
+      │
+      ▼
+Authorization
+      │
+      ▼
+Owner-Scoped Queryset
+      │
+      ▼
+Private Resource
 ```
 
-- Authentication handled by Supabase.
-- Django validates bearer tokens.
-- Private resources are filtered by `request.user`.
-- Passwords are never stored by Django.
-- Secrets remain in environment variables.
-- Unauthorized private resources return `404` to avoid leaking existence.
+### **Security guarantees**
+
+- Authentication is delegated to Supabase.
+- Django controls application authorization.
+- Supabase passwords are never stored by Django.
+- Private portfolios, watchlists, alerts and reports are owner-scoped.
+- Provider secrets never reach the frontend.
+- Environment variables hold sensitive configuration.
+- Unauthorized private reports return `404` to avoid resource enumeration.
 
 ---
 
-# Safe Provider Architecture
+# **10 · Portfolio Intelligence**
 
-StockLens never substitutes missing provider data with generated values.
+StockLens is designed to evolve from **stock research** into **investor-level intelligence**.
 
-```json
-{
-  "error": "market_data_provider_not_configured",
-  "detail": "The market_data provider is not configured."
-}
+```text
+                         STOCKLENS
+                            │
+             ┌──────────────┼──────────────┐
+             ▼              ▼              ▼
+        Stock Research   Portfolio      Watchlist
+             │              │              │
+             └──────────────┼──────────────┘
+                            ▼
+                     Risk & Alerts
+                            │
+                            ▼
+                    Investor Dashboard
 ```
 
-This makes the system fail **predictably instead of deceptively**.
+### Portfolio
 
-Provider integrations remain isolated behind adapters, allowing providers to be replaced without changing the core analysis architecture.
+- Holdings
+- Quantity
+- Average buy price
+- Stock exposure
+
+### Watchlist
+
+- Named stock collections
+- Research access
+- Future event monitoring
+
+### Alerts
+
+- Price thresholds
+- RSI thresholds
+- Active/inactive state
+- Trigger timestamps
 
 ---
 
-# Development
+# **11 · Production Safety**
 
-### Backend
+StockLens follows a **fail-closed intelligence model**.
+
+| Condition | Response |
+|---|:---:|
+| Invalid input | `400` |
+| Authentication failure | `401` |
+| Authorization failure | `403` |
+| Resource unavailable | `404` |
+| Synthesis unavailable | `501` |
+| Provider unavailable | `503` |
+| Successful read/update | `200` |
+| Resource created | `201` |
+| Resource deleted | `204` |
+
+### **Core rule**
+
+> **Missing evidence is acceptable. Fabricated evidence is not.**
+
+Provider integrations are isolated behind adapters so the core system remains independent of any single data vendor.
+
+---
+
+# **12 · Development**
+
+### **Backend**
 
 ```powershell
 python -m venv .venv
@@ -298,27 +583,29 @@ python -m venv .venv
 
 cd backend
 pip install -r requirements.txt
+
 python manage.py migrate
 python manage.py runserver
 ```
 
-### Frontend
+### **Frontend**
 
 ```powershell
 Copy-Item .env.local.example .env.local
+
 npm install
 npm run dev
 ```
 
-### Local URLs
+### **Local services**
 
 ```text
-Frontend → http://localhost:3000
-Backend  → http://127.0.0.1:8000
-Health   → http://127.0.0.1:8000/api/health/
+Frontend   → http://localhost:3000
+Backend    → http://127.0.0.1:8000
+Health API → http://127.0.0.1:8000/api/health/
 ```
 
-### Verification
+### **Validation**
 
 ```bash
 python manage.py check
@@ -331,71 +618,118 @@ npm run build
 
 ---
 
-# Roadmap
+# **13 · Roadmap**
 
 ```text
-MVP
- ↓
-Real Market Data + Fundamentals + News
- ↓
-Technical & Risk Engines
- ↓
-Evidence-Grounded AI
- ↓
-Real-Time Intelligence
- ↓
-Event-Driven Alerts
- ↓
-Portfolio Risk & Optimization
- ↓
-Research Memory + Personalization
- ↓
-Backtesting & Advanced Intelligence
+                    STOCKLENS MVP
+                         │
+        ┌────────────────┼────────────────┐
+        ▼                ▼                ▼
+   Market Data      Fundamentals      News/Sentiment
+        └────────────────┼────────────────┘
+                         ▼
+                  Technical + Risk
+                         │
+                         ▼
+               Evidence-Grounded AI
+                         │
+                         ▼
+                 Real-Time Events
+                         │
+              ┌──────────┴──────────┐
+              ▼                     ▼
+        Smart Alerts          Portfolio Risk
+              └──────────┬──────────┘
+                         ▼
+                Research Memory
+                         │
+                         ▼
+                 Personalization
+                         │
+                         ▼
+              Backtesting & Intelligence
 ```
 
 ---
 
-# Why StockLens?
+# **14 · Engineering Principles**
 
-Most platforms expose **charts, metrics and news**.
+<div align="center">
 
-Generic AI tools provide **answers**.
+| **Principle** | **Decision** |
+|---|---|
+| **Evidence > Assumptions** | AI reasons over validated data |
+| **Explainability > Black Box** | Conclusions remain traceable |
+| **Real Data > Fabricated Data** | Missing providers fail explicitly |
+| **Modularity > Lock-in** | Provider adapters isolate integrations |
+| **Parallelism > Bottlenecks** | Independent agents execute concurrently |
+| **Ownership > Shared State** | Private resources remain user-scoped |
+| **Safe Failure > Silent Failure** | Errors are explicit and structured |
 
-StockLens connects the two:
+</div>
+
+---
+
+# **15 · Why StockLens**
+
+Traditional market platforms primarily provide:
 
 ```text
-Real Market Evidence
-        ↓
-Specialized Agents
-        ↓
-Evidence Validation
-        ↓
-Cross-Domain Reasoning
-        ↓
-Explainable Intelligence
+Charts + Metrics + News
 ```
 
-### Core Differentiator
+Generic AI products primarily provide:
+
+```text
+Prompt + Context → Generated Answer
+```
+
+StockLens combines the two into an **evidence-driven intelligence pipeline**:
+
+```text
+┌─────────────────────────────┐
+│      REAL MARKET DATA       │
+└──────────────┬──────────────┘
+               ↓
+┌─────────────────────────────┐
+│     SPECIALIZED AGENTS      │
+│ Technical · Fundamental     │
+│ News · Risk                 │
+└──────────────┬──────────────┘
+               ↓
+┌─────────────────────────────┐
+│      EVIDENCE VALIDATION    │
+└──────────────┬──────────────┘
+               ↓
+┌─────────────────────────────┐
+│     CROSS-DOMAIN REASONING  │
+└──────────────┬──────────────┘
+               ↓
+┌─────────────────────────────┐
+│      EXPLAINABLE RESEARCH   │
+└──────────────┬──────────────┘
+               ↓
+┌─────────────────────────────┐
+│    INVESTOR INTELLIGENCE    │
+└─────────────────────────────┘
+```
+
+### **The differentiator**
 
 > **StockLens is not an AI chatbot that talks about stocks.**
 >
-> **It is an evidence-driven financial intelligence system where AI acts as the reasoning layer over verified market evidence.**
+> **It is a financial intelligence system that builds an evidence layer first, reasons across multiple research domains, and then explains every major conclusion.**
 
 ---
 
-## Engineering Principles
+<div align="center">
 
-```text
-Evidence > Assumptions
-Explainability > Black Box
-Real Data > Fabricated Data
-Modularity > Provider Lock-in
-Security > Convenience
-Parallel Agents > Sequential Bottlenecks
-```
+## **StockLens**
+
+### **Research with evidence. Reason with intelligence.**
+
+</div>
 
 ---
 
-### Disclaimer
-
-StockLens is a research and market-intelligence platform. It does not guarantee returns and does not constitute financial advice.
+> **Disclaimer:** StockLens is a research and market-intelligence platform. It does not guarantee investment returns and does not constitute financial advice.

@@ -12,6 +12,289 @@ endpoints return a structured `*_provider_not_configured` error until integratio
 - Next.js 16, React 19, TypeScript, Tailwind CSS, Zustand, Recharts, Framer Motion
 - Django, Django REST Framework, django-cors-headers, Supabase Postgres
 
+## System architecture
+
+StockLens separates the interactive research experience from authentication, persisted
+user data, and provider-backed market analysis. The landing-page charts currently use
+local demo data; the service adapters are the integration boundary for production market,
+fundamental, and news providers.
+
+```mermaid
+flowchart LR
+    subgraph client ["Client"]
+        user[Investor]
+        web[Next.js Web App]
+    end
+
+    subgraph gateway ["API Layer"]
+        api[Django REST API]
+    end
+
+    subgraph service ["Analysis Services"]
+        auth[Supabase Token Authentication]
+        orchestrator[Analysis Orchestrator]
+        agents[Technical, Fundamental, News and Risk Agents]
+        synthesis[Research Synthesis Agent]
+        adapters[Market Data, Fundamentals and News Adapters]
+    end
+
+    subgraph datastore ["Data Stores"]
+        postgres[(Supabase Postgres)]
+        demo[(Local Demo Dataset)]
+    end
+
+    subgraph external ["External Integrations"]
+        supabaseAuth[Supabase Auth]
+        providers[Market, Fundamentals, News and AI Providers]
+    end
+
+    user -->|Uses| web
+    web -->|Reads UI demo data| demo
+    web -->|REST over HTTPS| api
+    web -.->|OAuth or email login| supabaseAuth
+    api -->|Validates bearer token| auth
+    auth -.->|Fetches authoritative user| supabaseAuth
+    api -->|Reads and writes| postgres
+    api -->|Analysis request| orchestrator
+    orchestrator -->|Collect evidence| agents
+    agents -->|Request source data| adapters
+    adapters -.->|Provider APIs| providers
+    agents -->|Evidence bundles| synthesis
+    synthesis -.->|Grounded model call| providers
+    synthesis -->|Explainable report| api
+```
+
+### Analysis request flow
+
+1. The browser requests `POST /api/stocks/{symbol}/analyze/`, optionally with a
+   Supabase access token.
+2. Django resolves the stock and the orchestrator invokes the technical, fundamental,
+   news, and risk agents.
+3. Agents obtain evidence through provider adapters; the research agent combines that
+   evidence into an explainable result.
+4. Django stores the report. Anonymous reports are public, while authenticated reports
+   are visible only to their owner.
+5. Until the external providers and synthesis implementation are configured, the API
+   returns a structured `503` or `501` instead of fabricated analysis.
+
+## Data model
+
+| Entity | Purpose | Important constraints |
+| --- | --- | --- |
+| `User` | Django identity provisioned from a verified Supabase identity | One optional `UserProfile`; owns private resources |
+| `UserProfile` | Investor preferences, experience, goals, and onboarding state | Unique Supabase user ID; non-negative investment values |
+| `Stock` | Canonical security referenced throughout the platform | Unique symbol |
+| `Portfolio` | Named collection owned by one user | Holdings are deleted with the portfolio |
+| `PortfolioHolding` | Stock position inside a portfolio | One row per portfolio/stock; positive quantity; non-negative buy price |
+| `Watchlist` | Named stock list owned by one user | Items are deleted with the watchlist |
+| `WatchlistItem` | Stock membership in a watchlist | One row per watchlist/stock |
+| `Alert` | Owner-scoped price or RSI threshold | References one user and one stock |
+| `AnalysisReport` | Stored technical, fundamental, news, risk, and synthesis output | User is optional; anonymous reports are public |
+| `NewsArticle` | Provider article and sentiment associated with a stock | Unique article URL |
+
+### Entity-relationship diagram
+
+The diagram includes Django's built-in `User` because it is the ownership root for
+profiles, portfolios, watchlists, alerts, and private reports.
+
+```mermaid
+erDiagram
+    USER ||--o| USER_PROFILE : has
+    USER ||--o{ PORTFOLIO : owns
+    USER ||--o{ WATCHLIST : owns
+    USER ||--o{ ALERT : creates
+    USER o|--o{ ANALYSIS_REPORT : requests
+    PORTFOLIO ||--o{ PORTFOLIO_HOLDING : contains
+    STOCK ||--o{ PORTFOLIO_HOLDING : identifies
+    WATCHLIST ||--o{ WATCHLIST_ITEM : contains
+    STOCK ||--o{ WATCHLIST_ITEM : tracks
+    STOCK ||--o{ ALERT : triggers
+    STOCK ||--o{ ANALYSIS_REPORT : analyzed_in
+    STOCK ||--o{ NEWS_ARTICLE : has
+
+    USER {
+        bigint id PK
+        string username UK
+        string email
+    }
+    USER_PROFILE {
+        bigint id PK
+        bigint user_id FK, UK
+        uuid supabase_user_id UK
+        string display_name
+        decimal investment_amount
+        decimal monthly_contribution
+        string experience_level
+        string risk_tolerance
+        string investment_horizon
+        json interests
+        boolean onboarding_completed
+    }
+    STOCK {
+        bigint id PK
+        string symbol UK
+        string name
+        string exchange
+        string sector
+        string industry
+    }
+    PORTFOLIO {
+        bigint id PK
+        bigint user_id FK
+        string name
+        datetime created_at
+    }
+    PORTFOLIO_HOLDING {
+        bigint id PK
+        bigint portfolio_id FK
+        bigint stock_id FK
+        decimal quantity
+        decimal average_buy_price
+    }
+    WATCHLIST {
+        bigint id PK
+        bigint user_id FK
+        string name
+        datetime created_at
+    }
+    WATCHLIST_ITEM {
+        bigint id PK
+        bigint watchlist_id FK
+        bigint stock_id FK
+        datetime added_at
+    }
+    ALERT {
+        bigint id PK
+        bigint user_id FK
+        bigint stock_id FK
+        string alert_type
+        decimal threshold
+        boolean is_active
+        datetime triggered_at
+    }
+    ANALYSIS_REPORT {
+        bigint id PK
+        bigint stock_id FK
+        bigint user_id FK
+        json technical_analysis
+        json fundamental_analysis
+        json news_analysis
+        json risk_analysis
+        string overall_signal
+        text summary
+        datetime created_at
+    }
+    NEWS_ARTICLE {
+        bigint id PK
+        bigint stock_id FK
+        string title
+        string source
+        string url UK
+        datetime published_at
+        string sentiment
+        decimal sentiment_score
+    }
+```
+
+## API design
+
+All routes are relative to `NEXT_PUBLIC_API_BASE_URL`, which should include the `/api`
+prefix (for example, `http://127.0.0.1:8000/api`). JSON is used for request and response
+bodies. A trailing slash is expected by Django.
+
+### Authentication and visibility
+
+- Send `Authorization: Bearer <supabase-access-token>` for authenticated calls.
+- Django validates the token with Supabase Auth, provisions the matching local `User`
+  and `UserProfile` on first use, and never stores the user's Supabase password.
+- Stocks and provider-backed research endpoints are public. Profile, portfolio,
+  watchlist, and alert endpoints require authentication and filter by `request.user`.
+- An analysis report is readable when it is anonymous or belongs to the caller. A
+  private report owned by another user returns `404` to avoid leaking its existence.
+
+### Endpoints
+
+| Method | Route | Access | Design |
+| --- | --- | --- | --- |
+| `GET` | `/health/` | Public | Service health and identity |
+| `GET` | `/stocks/` | Public | List canonical stocks |
+| `GET` | `/stocks/{symbol}/` | Public | Retrieve a stock; symbol lookup is case-insensitive |
+| `GET` | `/stocks/{symbol}/technicals/` | Public | Technical indicators from historical provider data |
+| `GET` | `/stocks/{symbol}/fundamentals/` | Public | Valuation, earnings, growth, returns, and leverage |
+| `GET` | `/stocks/{symbol}/news/` | Public | Provider news and sentiment for a stock |
+| `POST` | `/stocks/{symbol}/analyze/` | Public, optional auth | Run the agent pipeline and persist a report |
+| `GET` | `/analysis/{id}/` | Visibility-scoped | Retrieve a public report or the caller's private report |
+| `GET`, `PATCH` | `/profile/` | Authenticated | Read or partially update the caller's profile |
+| `GET`, `POST` | `/portfolios/` | Authenticated | List owned portfolios or create one |
+| `GET`, `PUT`, `PATCH`, `DELETE` | `/portfolios/{id}/` | Authenticated | Manage one owned portfolio |
+| `GET`, `POST` | `/watchlists/` | Authenticated | List owned watchlists or create one |
+| `GET`, `PUT`, `PATCH`, `DELETE` | `/watchlists/{id}/` | Authenticated | Manage one owned watchlist |
+| `GET`, `POST` | `/alerts/` | Authenticated | List owned alerts or create one |
+| `GET`, `PUT`, `PATCH`, `DELETE` | `/alerts/{id}/` | Authenticated | Manage one owned alert |
+
+Portfolio responses embed read-only `holdings`, and watchlist responses embed read-only
+`items`. Dedicated write endpoints for holdings and watchlist items are not implemented yet.
+
+### Resource examples
+
+Create an authenticated portfolio:
+
+```http
+POST /api/portfolios/ HTTP/1.1
+Authorization: Bearer <supabase-access-token>
+Content-Type: application/json
+
+{
+  "name": "Long-term India"
+}
+```
+
+Create an alert:
+
+```http
+POST /api/alerts/ HTTP/1.1
+Authorization: Bearer <supabase-access-token>
+Content-Type: application/json
+
+{
+  "stock": 1,
+  "alert_type": "PRICE_ABOVE",
+  "threshold": "4250.0000",
+  "is_active": true
+}
+```
+
+Patch the authenticated investor profile:
+
+```http
+PATCH /api/profile/ HTTP/1.1
+Authorization: Bearer <supabase-access-token>
+Content-Type: application/json
+
+{
+  "experience_level": "INTERMEDIATE",
+  "risk_tolerance": "MODERATE",
+  "investment_horizon": "LONG_TERM",
+  "preferred_market": "India",
+  "interests": ["Technology", "Long-term investing"],
+  "onboarding_completed": true
+}
+```
+
+Provider-dependent endpoints use a stable error envelope while an integration is absent:
+
+```json
+{
+  "error": "market_data_provider_not_configured",
+  "detail": "The market_data provider is not configured."
+}
+```
+
+Expected response codes are `200` for successful reads and updates, `201` for creates,
+`204` for deletes, `400` for invalid input, `401` or `403` for authentication failures,
+`404` for missing or non-visible resources, `501` for missing synthesis, and `503` for
+unconfigured data providers.
+
 ## Development setup (Windows PowerShell)
 
 Create the project-root virtual environment only if `.venv/` does not already exist:

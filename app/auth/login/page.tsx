@@ -32,7 +32,7 @@ function LoginForm() {
     }
     return null;
   });
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => searchParams.get("error"));
 
   async function signInWithGoogle() {
     setError(null);

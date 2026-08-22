@@ -1,4 +1,5 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 let browserClient: SupabaseClient | null = null;
 
@@ -12,15 +13,8 @@ export function getSupabaseBrowserClient(): SupabaseClient {
     );
   }
 
-  browserClient ??= createClient(url, publishableKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      // PKCE keeps the OAuth exchange server-verified and gives the callback a
-      // concrete error when a redirect URL/provider setup is wrong.
-      flowType: "pkce",
-    },
-  });
+  // The SSR browser client stores both the PKCE verifier and the resulting
+  // session in cookies so the server callback can complete the same flow.
+  browserClient ??= createBrowserClient(url, publishableKey);
   return browserClient;
 }

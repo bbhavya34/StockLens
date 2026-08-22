@@ -6,7 +6,7 @@ from typing import Any
 from . import DataProviderNotConfigured
 
 
-def _ticker(symbol: str):
+def get_yfinance_ticker(symbol: str):
     if os.environ.get("MARKET_DATA_PROVIDER", "").lower() != "yfinance":
         raise DataProviderNotConfigured("market_data")
     try:
@@ -40,7 +40,7 @@ def _fast_value(fast_info: Any, *names: str) -> Any:
 
 def get_current_quote(symbol: str) -> dict[str, Any]:
     """Return the latest provider-backed quote available from Yahoo Finance."""
-    ticker = _ticker(symbol)
+    ticker = get_yfinance_ticker(symbol)
     try:
         fast_info = ticker.fast_info
         price = _number(_fast_value(fast_info, "last_price", "lastPrice"))
@@ -106,7 +106,7 @@ def get_current_quote(symbol: str) -> dict[str, Any]:
 def get_historical_data(symbol: str) -> list[dict[str, Any]]:
     """Fetch real OHLCV bars. yfinance is opt-in to avoid silently calling providers."""
     try:
-        ticker = _ticker(symbol)
+        ticker = get_yfinance_ticker(symbol)
         history = ticker.history(period="1y", interval="1d", auto_adjust=True)
     except DataProviderNotConfigured:
         raise

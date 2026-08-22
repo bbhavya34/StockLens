@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronRight, ScanSearch } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
@@ -12,7 +12,8 @@ const choices = [["BEGINNER", "INTERMEDIATE", "ADVANCED", "PROFESSIONAL"], ["CON
 
 export default function OnboardingPage() {
   const router = useRouter(); const { session, loading } = useAuth(); const [step, setStep] = useState(0); const [selected, setSelected] = useState<string[]>([]); const [answers, setAnswers] = useState<string[][]>(Array.from({ length: steps.length }, () => [])); const [saving, setSaving] = useState(false);
-  if (!loading && !session) { router.replace("/auth/login"); return null; }
+  useEffect(() => { if (!loading && !session) router.replace("/auth/login"); }, [loading, router, session]);
+  if (loading || !session) return null;
   const multi = step === 4;
   const choose = (value: string) => setSelected(multi ? (selected.includes(value) ? selected.filter((x) => x !== value) : [...selected, value]) : [value]);
   async function next() { if (!selected.length && step !== 5) return; const nextAnswers = answers.map((answer, index) => index === step ? selected : answer); if (step < steps.length - 1) { setAnswers(nextAnswers); setStep(step + 1); setSelected([]); return; } setSaving(true); try { await api.patch("/profile/", { experience_level: nextAnswers[0][0] === "PROFESSIONAL" ? "ADVANCED" : (nextAnswers[0][0] || "BEGINNER"), risk_tolerance: nextAnswers[1][0] || "MODERATE", investment_horizon: nextAnswers[2][0] || "LONG_TERM", preferred_market: nextAnswers[3][0] || "India", interests: nextAnswers[4], onboarding_completed: true }, { headers: { Authorization: `Bearer ${session?.access_token}` } }); } finally { router.replace("/research"); } }

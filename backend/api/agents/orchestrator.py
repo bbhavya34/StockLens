@@ -22,10 +22,17 @@ class AnalysisOrchestrator:
         fundamental = self.fundamental_agent.analyze(symbol)
         news = self.news_agent.analyze(symbol)
         risk = self.risk_agent.analyze(symbol)
-        return self.research_agent.synthesize(
+        synthesis = self.research_agent.synthesize(
             symbol=symbol,
             technical=technical,
             fundamental=fundamental,
             news=news,
             risk=risk,
         )
+        return {
+            "technical_analysis": technical,
+            "fundamental_analysis": fundamental,
+            "news_analysis": news,
+            "risk_analysis": risk,
+            **synthesis,
+        }

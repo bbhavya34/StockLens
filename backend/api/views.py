@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .agents.orchestrator import AnalysisOrchestrator
-from .models import Alert, AnalysisReport, Portfolio, Stock, UserProfile, Watchlist
+from .models import Alert, AnalysisReport, Portfolio, PortfolioHolding, Stock, UserProfile, Watchlist
 from .serializers import (
     AlertSerializer,
     AnalysisReportSerializer,
@@ -20,6 +20,7 @@ from .serializers import (
 from .services.fundamentals import get_fundamental_analysis
 from .services.market_data import get_current_quote, get_historical_data
 from .services.news import get_stock_news
+from .services.risk import get_portfolio_risk
 from .services.technicals import get_technical_analysis
 from .services import DataProviderNotConfigured
 from .ml_registry import ModelRegistry
@@ -172,10 +173,19 @@ class ResearchRunView(APIView):
             return Response({"error": "symbol_required", "detail": "Provide a market symbol."}, status=status.HTTP_400_BAD_REQUEST)
         try:
             quote = get_current_quote(symbol)
-            technical = get_technical_analysis(symbol)
+            result = AnalysisOrchestrator().analyze(symbol)
         except DataProviderNotConfigured as exc:
             return Response({"status": "unavailable", "symbol": symbol, "detail": str(exc), "pipeline": ["technical", "fundamental", "news", "risk", "portfolio", "evidence_validation", "conflict_detection", "synthesis"]}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        return Response({"status": "partial", "symbol": symbol, "generated_at": technical["data_timestamp"], "quote": quote, "agents": {"technical": {"status": "complete", **technical}, "fundamental": {"status": "unavailable", "reason": "Fundamental provider not configured."}, "news": {"status": "unavailable", "reason": "News provider not configured."}, "risk": {"status": "unavailable", "reason": "Portfolio and returns provider not configured."}}, "synthesis": {"status": "unavailable", "reason": "Synthesis is withheld until cross-domain evidence is available."}})
+        holdings = PortfolioHolding.objects.filter(portfolio__user=request.user).select_related("stock")
+        try:
+            portfolio = get_portfolio_risk([
+                {"symbol": holding.stock.symbol, "quantity": holding.quantity, "average_buy_price": holding.average_buy_price}
+                for holding in holdings
+            ])
+        except DataProviderNotConfigured as exc:
+            portfolio = {"status": "unavailable", "reason": str(exc)}
+        technical = result["technical_analysis"]
+        return Response({"status": "complete", "symbol": symbol, "generated_at": technical["data_timestamp"], "quote": quote, "agents": {"technical": {"status": "complete", **technical}, "fundamental": {"status": "complete", **result["fundamental_analysis"]}, "news": {"status": "complete", **result["news_analysis"]}, "risk": {"status": "complete", **result["risk_analysis"]}, "portfolio": portfolio}, "synthesis": {key: result[key] for key in ("status", "overall_signal", "confidence", "agent_agreement", "signal_conflict", "evidence_coverage", "summary")}})
 
 
 class AnalysisReportDetailView(APIView):

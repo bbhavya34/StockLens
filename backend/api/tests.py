@@ -8,7 +8,11 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .models import AnalysisReport, Portfolio, Stock, UserProfile
+from .agents.research_agent import ResearchAgent
+from .services.fundamentals import get_fundamental_analysis
 from .services.market_data import get_current_quote
+from .services.news import get_stock_news
+from .services.risk import get_stock_risk
 
 
 class PublicApiTests(APITestCase):
@@ -97,6 +101,63 @@ class MarketDataServiceTests(APITestCase):
         self.assertEqual(quote["change"], 2.5)
         self.assertAlmostEqual(quote["change_percent"], 1.121076, places=5)
         self.assertEqual(quote["source"], "Yahoo Finance")
+
+    @patch("api.services.fundamentals.get_yfinance_ticker")
+    def test_fundamentals_use_provider_metrics(self, get_ticker) -> None:
+        get_ticker.return_value.get_info.return_value = {
+            "longName": "Example Inc",
+            "marketCap": 1_000_000,
+            "forwardPE": 20,
+            "priceToBook": 3,
+            "revenueGrowth": 0.12,
+            "earningsGrowth": 0.15,
+            "profitMargins": 0.2,
+            "returnOnEquity": 0.18,
+            "debtToEquity": 40,
+        }
+        result = get_fundamental_analysis("TEST")
+        self.assertEqual(result["signal"], "positive")
+        self.assertEqual(result["source"], "Yahoo Finance")
+        self.assertGreater(result["confidence"], 0.5)
+
+    @patch("api.services.news.get_yfinance_ticker")
+    def test_news_has_traceable_rule_based_sentiment(self, get_ticker) -> None:
+        get_ticker.return_value.news = [{
+            "content": {
+                "title": "Company beats estimates with strong growth",
+                "summary": "Record annual gain",
+                "provider": {"displayName": "Example News"},
+                "canonicalUrl": {"url": "https://example.com/story"},
+                "pubDate": "2026-08-22T00:00:00Z",
+            }
+        }]
+        articles = get_stock_news("TEST")
+        self.assertEqual(len(articles), 1)
+        self.assertEqual(articles[0]["sentiment"], "positive")
+        self.assertGreater(articles[0]["sentiment_score"], 0)
+
+    @patch("api.services.risk.get_historical_data")
+    def test_risk_is_calculated_from_historical_closes(self, get_history) -> None:
+        get_history.return_value = [
+            {"timestamp": f"2026-01-{index + 1:02d}T00:00:00Z", "close": 100 + index + (-4 if index == 5 else 0), "source": "Yahoo Finance"}
+            for index in range(20)
+        ]
+        result = get_stock_risk("TEST")
+        self.assertEqual(result["observations"], 19)
+        self.assertIn(result["risk_level"], {"low", "moderate", "high"})
+        self.assertGreaterEqual(result["annualized_volatility"], 0)
+
+    def test_synthesis_combines_agent_evidence(self) -> None:
+        result = ResearchAgent().synthesize(
+            symbol="TEST",
+            technical={"signal": "bullish"},
+            fundamental={"signal": "positive"},
+            news={"articles": [{"sentiment_score": 0.5}]},
+            risk={"risk_level": "moderate"},
+        )
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(result["overall_signal"], "bullish")
+        self.assertFalse(result["signal_conflict"])
 
 
 class OwnershipTests(APITestCase):

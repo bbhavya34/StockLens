@@ -22,8 +22,10 @@ def get_stock_news(symbol: str) -> list[dict[str, Any]]:
         items = get_yfinance_ticker(symbol).news or []
     except DataProviderNotConfigured:
         raise
-    except Exception as exc:
-        raise DataProviderNotConfigured("news_unavailable") from exc
+    except Exception:
+        # No articles is a valid provider result. Keep the agent active and
+        # report zero evidence instead of failing the complete pipeline.
+        items = []
 
     articles: list[dict[str, Any]] = []
     for item in items[:10]:

@@ -40,7 +40,16 @@ def get_stock_risk(symbol: str) -> dict[str, Any]:
 def get_portfolio_risk(holdings: list[dict[str, Any]]) -> dict[str, Any]:
     """Calculate diversification and portfolio risk once provider data is available."""
     if not holdings:
-        return {"status": "unavailable", "reason": "No saved portfolio holdings."}
+        return {
+            "status": "complete",
+            "market_value": 0.0,
+            "cost_basis": 0.0,
+            "unrealized_return_percent": None,
+            "concentration_score": 0.0,
+            "concentration_level": "none",
+            "positions": [],
+            "reason": "No saved portfolio holdings to analyze.",
+        }
     positions = []
     for holding in holdings:
         quote = get_current_quote(str(holding["symbol"]))

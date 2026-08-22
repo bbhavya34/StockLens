@@ -16,17 +16,25 @@ def _number(value: Any) -> float | None:
 
 def get_fundamental_analysis(symbol: str) -> dict[str, Any]:
     """Fetch valuation, earnings, growth, returns, and leverage fundamentals."""
+    ticker = get_yfinance_ticker(symbol)
     try:
-        info = get_yfinance_ticker(symbol).get_info()
-    except DataProviderNotConfigured:
-        raise
-    except Exception as exc:
-        raise DataProviderNotConfigured("fundamentals_unavailable") from exc
+        info = ticker.get_info()
+    except Exception:
+        info = {}
     if not isinstance(info, dict):
-        raise DataProviderNotConfigured("fundamentals_unavailable")
+        info = {}
+
+    # Yahoo's detailed quote-summary endpoint is sometimes blocked on cloud
+    # hosts even while price data works. fast_info keeps the agent active with
+    # limited, explicitly low-confidence market metadata in that case.
+    try:
+        fast_info = ticker.fast_info
+        fast_market_cap = _number(fast_info.get("market_cap"))
+    except Exception:
+        fast_market_cap = None
 
     metrics = {
-        "market_cap": _number(info.get("marketCap")),
+        "market_cap": _number(info.get("marketCap")) or fast_market_cap,
         "trailing_pe": _number(info.get("trailingPE")),
         "forward_pe": _number(info.get("forwardPE")),
         "price_to_book": _number(info.get("priceToBook")),
@@ -38,15 +46,17 @@ def get_fundamental_analysis(symbol: str) -> dict[str, Any]:
         "dividend_yield": _number(info.get("dividendYield")),
     }
     available = {key: value for key, value in metrics.items() if value is not None}
-    if len(available) < 3:
-        raise DataProviderNotConfigured("fundamentals_insufficient")
-
     score = 0
-    score += 1 if (metrics["revenue_growth"] or 0) > 0.05 else -1
-    score += 1 if (metrics["earnings_growth"] or 0) > 0.05 else -1
-    score += 1 if (metrics["return_on_equity"] or 0) > 0.12 else 0
-    score += 1 if 0 < (metrics["forward_pe"] or 0) < 30 else 0
-    score -= 1 if (metrics["debt_to_equity"] or 0) > 150 else 0
+    if metrics["revenue_growth"] is not None:
+        score += 1 if metrics["revenue_growth"] > 0.05 else -1
+    if metrics["earnings_growth"] is not None:
+        score += 1 if metrics["earnings_growth"] > 0.05 else -1
+    if metrics["return_on_equity"] is not None:
+        score += 1 if metrics["return_on_equity"] > 0.12 else 0
+    if metrics["forward_pe"] is not None:
+        score += 1 if 0 < metrics["forward_pe"] < 30 else 0
+    if metrics["debt_to_equity"] is not None:
+        score -= 1 if metrics["debt_to_equity"] > 150 else 0
     signal = "positive" if score >= 2 else "negative" if score <= -2 else "neutral"
     retrieved_at = datetime.now(UTC).isoformat()
     return {
@@ -57,6 +67,7 @@ def get_fundamental_analysis(symbol: str) -> dict[str, Any]:
         "signal": signal,
         "score": score,
         "confidence": round(len(available) / len(metrics), 2),
+        "coverage": "full" if len(available) >= 6 else "limited",
         "metrics": metrics,
         "source": "Yahoo Finance",
         "data_timestamp": retrieved_at,

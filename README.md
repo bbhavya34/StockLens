@@ -486,6 +486,8 @@ The ownership model keeps private financial resources isolated at the database a
 GET  /api/health/
 GET  /api/stocks/
 GET  /api/stocks/{symbol}/
+GET  /api/stocks/{symbol}/quote/
+GET  /api/stocks/{symbol}/history/
 GET  /api/stocks/{symbol}/technicals/
 GET  /api/stocks/{symbol}/fundamentals/
 GET  /api/stocks/{symbol}/news/

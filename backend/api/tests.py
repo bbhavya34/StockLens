@@ -1,3 +1,5 @@
+import os
+from types import SimpleNamespace
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -6,6 +8,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .models import AnalysisReport, Portfolio, Stock, UserProfile
+from .services.market_data import get_current_quote
 
 
 class PublicApiTests(APITestCase):
@@ -27,6 +30,73 @@ class PublicApiTests(APITestCase):
         response = self.client.get("/api/stocks/TEST/technicals/")
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(response.json()["error"], "market_data_provider_not_configured")
+
+    def test_unconfigured_quote_is_structured(self) -> None:
+        response = self.client.get("/api/stocks/AAPL/quote/")
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(response.json()["error"], "market_data_provider_not_configured")
+
+    @patch("api.views.get_current_quote")
+    def test_quote_returns_provider_data(self, get_quote) -> None:
+        get_quote.return_value = {
+            "symbol": "AAPL",
+            "price": 225.5,
+            "previous_close": 223.0,
+            "change": 2.5,
+            "change_percent": 1.121,
+            "source": "Yahoo Finance",
+        }
+        response = self.client.get("/api/stocks/AAPL/quote/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["price"], 225.5)
+        self.assertEqual(response.json()["source"], "Yahoo Finance")
+
+    @patch("api.views.get_historical_data")
+    def test_history_returns_provider_bars(self, get_history) -> None:
+        get_history.return_value = [
+            {
+                "timestamp": "2026-08-21T00:00:00+00:00",
+                "open": 220.0,
+                "high": 226.0,
+                "low": 219.0,
+                "close": 225.5,
+                "volume": 1000.0,
+                "source": "Yahoo Finance",
+            }
+        ]
+        response = self.client.get("/api/stocks/AAPL/history/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["symbol"], "AAPL")
+        self.assertEqual(len(response.json()["bars"]), 1)
+
+
+class MarketDataServiceTests(APITestCase):
+    @patch.dict(os.environ, {"MARKET_DATA_PROVIDER": "yfinance"})
+    def test_quote_maps_yfinance_fast_info(self) -> None:
+        fake_ticker = SimpleNamespace(
+            fast_info={
+                "last_price": 225.5,
+                "previous_close": 223.0,
+                "open": 224.0,
+                "day_high": 227.0,
+                "day_low": 222.5,
+                "last_volume": 123456,
+                "market_cap": 3_400_000_000_000,
+                "currency": "USD",
+                "exchange": "NMS",
+                "timezone": "America/New_York",
+            }
+        )
+        fake_yfinance = SimpleNamespace(Ticker=lambda symbol: fake_ticker)
+
+        with patch.dict("sys.modules", {"yfinance": fake_yfinance}):
+            quote = get_current_quote("aapl")
+
+        self.assertEqual(quote["symbol"], "AAPL")
+        self.assertEqual(quote["price"], 225.5)
+        self.assertEqual(quote["change"], 2.5)
+        self.assertAlmostEqual(quote["change_percent"], 1.121076, places=5)
+        self.assertEqual(quote["source"], "Yahoo Finance")
 
 
 class OwnershipTests(APITestCase):

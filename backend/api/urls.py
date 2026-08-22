@@ -10,6 +10,8 @@ from .views import (
     PortfolioViewSet,
     ProfileView,
     StockViewSet,
+    StockHistoryView,
+    StockQuoteView,
     TechnicalsView,
     WatchlistViewSet,
     TechnicalPredictView,
@@ -31,6 +33,8 @@ router.register("alerts", AlertViewSet, basename="alert")
 urlpatterns = [
     path("health/", health, name="health"),
     path("profile/", ProfileView.as_view(), name="profile"),
+    path("stocks/<str:symbol>/quote/", StockQuoteView.as_view(), name="stock-quote"),
+    path("stocks/<str:symbol>/history/", StockHistoryView.as_view(), name="stock-history"),
     path("stocks/<str:symbol>/technicals/", TechnicalsView.as_view(), name="technicals"),
     path(
         "stocks/<str:symbol>/fundamentals/",

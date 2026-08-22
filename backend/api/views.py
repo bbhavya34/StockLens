@@ -18,6 +18,7 @@ from .serializers import (
     WatchlistSerializer,
 )
 from .services.fundamentals import get_fundamental_analysis
+from .services.market_data import get_current_quote, get_historical_data
 from .services.news import get_stock_news
 from .services.technicals import get_technical_analysis
 from .services import DataProviderNotConfigured
@@ -52,6 +53,27 @@ class StockViewSet(viewsets.ReadOnlyModelViewSet):
         obj = get_object_or_404(queryset, symbol__iexact=self.kwargs["symbol"])
         self.check_object_permissions(self.request, obj)
         return obj
+
+
+class StockQuoteView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request: Request, symbol: str) -> Response:
+        try:
+            return Response(get_current_quote(symbol))
+        except DataProviderNotConfigured as exc:
+            return _provider_error(exc)
+
+
+class StockHistoryView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request: Request, symbol: str) -> Response:
+        try:
+            bars = get_historical_data(symbol)
+        except DataProviderNotConfigured as exc:
+            return _provider_error(exc)
+        return Response({"symbol": symbol.upper(), "bars": bars})
 
 
 class TechnicalsView(APIView):
@@ -149,10 +171,11 @@ class ResearchRunView(APIView):
         if not symbol:
             return Response({"error": "symbol_required", "detail": "Provide a market symbol."}, status=status.HTTP_400_BAD_REQUEST)
         try:
+            quote = get_current_quote(symbol)
             technical = get_technical_analysis(symbol)
         except DataProviderNotConfigured as exc:
             return Response({"status": "unavailable", "symbol": symbol, "detail": str(exc), "pipeline": ["technical", "fundamental", "news", "risk", "portfolio", "evidence_validation", "conflict_detection", "synthesis"]}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        return Response({"status": "partial", "symbol": symbol, "generated_at": technical["data_timestamp"], "agents": {"technical": {"status": "complete", **technical}, "fundamental": {"status": "unavailable", "reason": "Fundamental provider not configured."}, "news": {"status": "unavailable", "reason": "News provider not configured."}, "risk": {"status": "unavailable", "reason": "Portfolio and returns provider not configured."}}, "synthesis": {"status": "unavailable", "reason": "Synthesis is withheld until cross-domain evidence is available."}})
+        return Response({"status": "partial", "symbol": symbol, "generated_at": technical["data_timestamp"], "quote": quote, "agents": {"technical": {"status": "complete", **technical}, "fundamental": {"status": "unavailable", "reason": "Fundamental provider not configured."}, "news": {"status": "unavailable", "reason": "News provider not configured."}, "risk": {"status": "unavailable", "reason": "Portfolio and returns provider not configured."}}, "synthesis": {"status": "unavailable", "reason": "Synthesis is withheld until cross-domain evidence is available."}})
 
 
 class AnalysisReportDetailView(APIView):

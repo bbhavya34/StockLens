@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .agents.orchestrator import AnalysisOrchestrator
+from .agents.research_agent import ResearchAgent
 from .models import Alert, AnalysisReport, Portfolio, PortfolioHolding, Stock, UserProfile, Watchlist
 from .serializers import (
     AlertSerializer,
@@ -20,7 +21,7 @@ from .serializers import (
 from .services.fundamentals import get_fundamental_analysis
 from .services.market_data import get_current_quote, get_historical_data
 from .services.news import get_stock_news
-from .services.risk import get_portfolio_risk
+from .services.risk import get_portfolio_risk, get_stock_risk
 from .services.technicals import get_technical_analysis
 from .services import DataProviderNotConfigured
 from .ml_registry import ModelRegistry
@@ -171,11 +172,20 @@ class ResearchRunView(APIView):
         symbol = str(request.data.get("symbol", "")).strip().upper()
         if not symbol:
             return Response({"error": "symbol_required", "detail": "Provide a market symbol."}, status=status.HTTP_400_BAD_REQUEST)
+        def run_agent(callback) -> dict:
+            try:
+                return {"status": "complete", **callback()}
+            except DataProviderNotConfigured as exc:
+                return {"status": "unavailable", "reason": str(exc), "error": exc.error_code}
+
         try:
             quote = get_current_quote(symbol)
-            result = AnalysisOrchestrator().analyze(symbol)
-        except DataProviderNotConfigured as exc:
-            return Response({"status": "unavailable", "symbol": symbol, "detail": str(exc), "pipeline": ["technical", "fundamental", "news", "risk", "portfolio", "evidence_validation", "conflict_detection", "synthesis"]}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except DataProviderNotConfigured:
+            quote = None
+        technical = run_agent(lambda: get_technical_analysis(symbol))
+        fundamental = run_agent(lambda: get_fundamental_analysis(symbol))
+        news = run_agent(lambda: {"articles": get_stock_news(symbol)})
+        risk = run_agent(lambda: get_stock_risk(symbol))
         holdings = PortfolioHolding.objects.filter(portfolio__user=request.user).select_related("stock")
         try:
             portfolio = get_portfolio_risk([
@@ -184,8 +194,20 @@ class ResearchRunView(APIView):
             ])
         except DataProviderNotConfigured as exc:
             portfolio = {"status": "unavailable", "reason": str(exc)}
-        technical = result["technical_analysis"]
-        return Response({"status": "complete", "symbol": symbol, "generated_at": technical["data_timestamp"], "quote": quote, "agents": {"technical": {"status": "complete", **technical}, "fundamental": {"status": "complete", **result["fundamental_analysis"]}, "news": {"status": "complete", **result["news_analysis"]}, "risk": {"status": "complete", **result["risk_analysis"]}, "portfolio": portfolio}, "synthesis": {key: result[key] for key in ("status", "overall_signal", "confidence", "agent_agreement", "signal_conflict", "evidence_coverage", "summary")}})
+        research_agents = {"technical": technical, "fundamental": fundamental, "news": news, "risk": risk, "portfolio": portfolio}
+        completed = sum(agent.get("status") == "complete" for agent in research_agents.values())
+        if completed >= 2:
+            synthesis = ResearchAgent().synthesize(
+                symbol=symbol,
+                technical=technical if technical["status"] == "complete" else {},
+                fundamental=fundamental if fundamental["status"] == "complete" else {},
+                news=news if news["status"] == "complete" else {"articles": []},
+                risk=risk if risk["status"] == "complete" else {},
+            )
+        else:
+            synthesis = {"status": "unavailable", "summary": "Not enough provider-backed evidence was available to synthesize a research view."}
+        generated_at = technical.get("data_timestamp") or (quote or {}).get("retrieved_at")
+        return Response({"status": "complete" if completed == len(research_agents) else "partial", "symbol": symbol, "generated_at": generated_at, "quote": quote, "agents": research_agents, "synthesis": synthesis})
 
 
 class AnalysisReportDetailView(APIView):

@@ -9,8 +9,9 @@ from rest_framework.test import APITestCase
 
 from .models import AnalysisReport, Portfolio, Stock, UserProfile
 from .agents.research_agent import ResearchAgent
+from .services import DataProviderNotConfigured
 from .services.fundamentals import get_fundamental_analysis
-from .services.market_data import get_current_quote
+from .services.market_data import get_current_quote, normalize_yahoo_symbol
 from .services.news import get_stock_news
 from .services.risk import get_stock_risk
 
@@ -75,6 +76,11 @@ class PublicApiTests(APITestCase):
 
 
 class MarketDataServiceTests(APITestCase):
+    def test_common_nse_symbols_are_normalized(self) -> None:
+        self.assertEqual(normalize_yahoo_symbol("RELIANCE"), "RELIANCE.NS")
+        self.assertEqual(normalize_yahoo_symbol("tcs"), "TCS.NS")
+        self.assertEqual(normalize_yahoo_symbol("AAPL"), "AAPL")
+
     @patch.dict(os.environ, {"MARKET_DATA_PROVIDER": "yfinance"})
     def test_quote_maps_yfinance_fast_info(self) -> None:
         fake_ticker = SimpleNamespace(
@@ -191,6 +197,28 @@ class OwnershipTests(APITestCase):
         self.client.force_authenticate(self.owner)
         response = self.client.get(f"/api/analysis/{report.id}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("api.views.get_stock_risk")
+    @patch("api.views.get_stock_news")
+    @patch("api.views.get_fundamental_analysis")
+    @patch("api.views.get_technical_analysis")
+    @patch("api.views.get_current_quote")
+    def test_research_returns_partial_result_when_one_provider_call_fails(
+        self, get_quote, get_technical, get_fundamental, get_news, get_risk
+    ) -> None:
+        get_quote.return_value = {"price": 100.0, "retrieved_at": "2026-08-22T00:00:00Z"}
+        get_technical.return_value = {"signal": "bullish", "confidence": 0.7, "data_timestamp": "2026-08-22T00:00:00Z"}
+        get_fundamental.side_effect = DataProviderNotConfigured("fundamentals_unavailable")
+        get_news.return_value = []
+        get_risk.return_value = {"risk_level": "moderate", "confidence": 1.0, "data_timestamp": "2026-08-22T00:00:00Z"}
+        self.client.force_authenticate(self.owner)
+
+        response = self.client.post("/api/research/run/", {"symbol": "RELIANCE"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["status"], "partial")
+        self.assertEqual(response.json()["agents"]["fundamental"]["status"], "unavailable")
+        self.assertEqual(response.json()["agents"]["technical"]["status"], "complete")
 
 
 class SupabaseAuthenticationTests(APITestCase):

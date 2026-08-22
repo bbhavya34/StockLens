@@ -5,6 +5,20 @@ from typing import Any
 
 from . import DataProviderNotConfigured
 
+YAHOO_SYMBOL_ALIASES = {
+    "RELIANCE": "RELIANCE.NS",
+    "TCS": "TCS.NS",
+    "INFY": "INFY.NS",
+    "HDFCBANK": "HDFCBANK.NS",
+    "NIFTY 50": "^NSEI",
+    "NIFTY50": "^NSEI",
+}
+
+
+def normalize_yahoo_symbol(symbol: str) -> str:
+    normalized = symbol.strip().upper()
+    return YAHOO_SYMBOL_ALIASES.get(normalized, normalized)
+
 
 def get_yfinance_ticker(symbol: str):
     if os.environ.get("MARKET_DATA_PROVIDER", "").lower() != "yfinance":
@@ -13,7 +27,7 @@ def get_yfinance_ticker(symbol: str):
         import yfinance as yf
     except ImportError as exc:
         raise DataProviderNotConfigured("market_data_package") from exc
-    return yf.Ticker(symbol.strip().upper())
+    return yf.Ticker(normalize_yahoo_symbol(symbol))
 
 
 def _number(value: Any) -> float | None:

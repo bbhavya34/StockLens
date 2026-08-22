@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import AnalysisReport, Portfolio, Stock, UserProfile
+from .models import AnalysisReport, Portfolio, PortfolioHolding, Stock, UserProfile
 from .agents.research_agent import ResearchAgent
 from .services import DataProviderNotConfigured
 from .services.fundamentals import get_fundamental_analysis
@@ -186,6 +186,28 @@ class OwnershipTests(APITestCase):
         response = self.client.get("/api/portfolios/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual([item["id"] for item in response.json()], [self.owner_portfolio.id])
+
+    def test_demo_portfolio_creates_all_supported_firms_idempotently(self) -> None:
+        self.client.force_authenticate(self.owner)
+
+        first = self.client.post("/api/portfolios/demo/", format="json")
+        second = self.client.post("/api/portfolios/demo/", format="json")
+
+        self.assertEqual(first.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(second.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            {holding["stock_detail"]["symbol"] for holding in second.json()["holdings"]},
+            {"TCS", "RELIANCE", "INFY", "HDFCBANK"},
+        )
+        self.assertEqual(
+            Portfolio.objects.filter(user=self.owner, name="StockLens Demo Portfolio").count(),
+            1,
+        )
+        self.assertEqual(
+            PortfolioHolding.objects.filter(portfolio__user=self.owner, portfolio__name="StockLens Demo Portfolio").count(),
+            4,
+        )
+        self.assertFalse(Portfolio.objects.filter(user=self.other, name="StockLens Demo Portfolio").exists())
 
     def test_private_analysis_is_not_visible_to_another_user(self) -> None:
         stock = Stock.objects.create(symbol="TEST", name="Test Stock", exchange="TEST")

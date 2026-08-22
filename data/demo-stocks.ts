@@ -268,6 +268,13 @@ export const portfolioAllocation = [
   { name: "HDFCBANK", value: 15, color: "#8b8b93" },
 ];
 
+export const demoPortfolioHoldings = [
+  { symbol: "TCS", company: "Tata Consultancy Services", allocation: 35, quantity: 10, averageBuyPrice: 3500 },
+  { symbol: "RELIANCE", company: "Reliance Industries", allocation: 25, quantity: 20, averageBuyPrice: 1250 },
+  { symbol: "INFY", company: "Infosys", allocation: 25, quantity: 15.625, averageBuyPrice: 1600 },
+  { symbol: "HDFCBANK", company: "HDFC Bank", allocation: 15, quantity: 10, averageBuyPrice: 1500 },
+] as const;
+
 export const backtestResult = {
   totalTrades: 18,
   winners: 11,

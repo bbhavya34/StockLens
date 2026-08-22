@@ -516,6 +516,7 @@ GET    /api/profile/
 PATCH  /api/profile/
 GET    /api/portfolios/
 POST   /api/portfolios/
+POST   /api/portfolios/demo/      # Create/restore the signed-in user's four-firm demo portfolio
 PUT    /api/portfolios/{id}/
 PATCH  /api/portfolios/{id}/
 DELETE /api/portfolios/{id}/

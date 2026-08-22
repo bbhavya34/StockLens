@@ -1,7 +1,10 @@
+from decimal import Decimal
+
+from django.db import transaction
 from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -251,6 +254,38 @@ class PortfolioViewSet(viewsets.ModelViewSet):
     def get_queryset(self) -> QuerySet[Portfolio]:
         return Portfolio.objects.filter(user=self.request.user).prefetch_related(
             "holdings__stock"
+        )
+
+    @action(detail=False, methods=["post"], url_path="demo")
+    @transaction.atomic
+    def create_demo(self, request: Request) -> Response:
+        """Create or restore the four-firm demo portfolio for this user."""
+        portfolio, created = Portfolio.objects.get_or_create(
+            user=request.user,
+            name="StockLens Demo Portfolio",
+        )
+        demo_holdings = [
+            ("TCS", "Tata Consultancy Services", "Information Technology", Decimal("10"), Decimal("3500")),
+            ("RELIANCE", "Reliance Industries", "Energy", Decimal("20"), Decimal("1250")),
+            ("INFY", "Infosys", "Information Technology", Decimal("15.625"), Decimal("1600")),
+            ("HDFCBANK", "HDFC Bank", "Financial Services", Decimal("10"), Decimal("1500")),
+        ]
+
+        for symbol, name, sector, quantity, average_buy_price in demo_holdings:
+            stock, _ = Stock.objects.update_or_create(
+                symbol=symbol,
+                defaults={"name": name, "exchange": "NSE", "sector": sector, "industry": sector},
+            )
+            PortfolioHolding.objects.update_or_create(
+                portfolio=portfolio,
+                stock=stock,
+                defaults={"quantity": quantity, "average_buy_price": average_buy_price},
+            )
+
+        portfolio = self.get_queryset().get(pk=portfolio.pk)
+        return Response(
+            self.get_serializer(portfolio).data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
 
 

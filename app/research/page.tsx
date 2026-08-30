@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -234,7 +234,7 @@ export default function ResearchPage() {
     } catch (err) {
       setNotice(
         err instanceof Error
-          ? Research unavailable: 
+          ? `Research unavailable: ${err.message}`
           : "Research unavailable. Configure a market-data provider and retry."
       );
     } finally {

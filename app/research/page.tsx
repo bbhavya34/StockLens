@@ -209,7 +209,7 @@ export default function ResearchPage() {
       }>(
         "/research/run/",
         { symbol: symbol.trim().toUpperCase() },
-        { headers: { Authorization: Bearer  } }
+        { headers: { Authorization: `Bearer ${session?.access_token}` } }
       );
 
       const technicalResult = report.agents?.technical;
@@ -320,7 +320,7 @@ export default function ResearchPage() {
                   </span>
                 </span>
                 <ChevronDown
-                  className={h-5 w-5 transition  shrink-0}
+                  className="h-5 w-5 transition shrink-0"
                 />
               </button>
               {open && (

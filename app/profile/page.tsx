@@ -15,6 +15,7 @@ import {
   Target,
   TrendingUp,
   UserRound,
+  ScanSearch,
   WalletCards,
 } from "lucide-react";
 import { useAuth, type StockLensProfile } from "@/components/auth/auth-provider";

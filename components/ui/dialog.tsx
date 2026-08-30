@@ -16,15 +16,18 @@ interface DialogOverlayProps
 function DialogOverlay({ className, ...props }: DialogOverlayProps) {
   return (
     <AnimatePresence>
-      <motion.div asChild initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-        <DialogPrimitive.Overlay
+      <DialogPrimitive.Overlay asChild {...props}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
           className={cn(
             "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm",
             className
           )}
-          {...props}
         />
-      </motion.div>
+      </DialogPrimitive.Overlay>
     </AnimatePresence>
   );
 }
@@ -43,13 +46,16 @@ function DialogContent({
   return (
     <DialogPrimitive.Portal>
       <DialogOverlay />
-      <motion.div asChild initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 16 }} transition={{ duration: 0.2, ease: "easeOut" }}>
-        <DialogPrimitive.Content
+      <DialogPrimitive.Content asChild {...props}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 16 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 16 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
           className={cn(
             "fixed left-[50%] top-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] overflow-hidden rounded-xl border border-border-strong bg-surface shadow-xl",
             className
           )}
-          {...props}
         >
           {children}
           {showClose && (
@@ -58,8 +64,8 @@ function DialogContent({
               <span className="sr-only">Close</span>
             </DialogPrimitive.Close>
           )}
-        </DialogPrimitive.Content>
-      </motion.div>
+        </motion.div>
+      </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
   );
 }

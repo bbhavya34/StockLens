@@ -24,6 +24,9 @@
 .DS_Store
 Thumbs.db
 Desktop.ini
+* - Copy.*
+*Copy.*
+* - Copy*
 /AGENTS.md
 *.pem
 *.log

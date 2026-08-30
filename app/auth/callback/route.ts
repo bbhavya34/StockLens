@@ -53,9 +53,11 @@ export async function GET(request: NextRequest) {
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
-        Object.entries(headersToSet).forEach(([name, value]) => {
-          response.headers.set(name, value);
-        });
+        if (headersToSet && typeof headersToSet === "object") {
+          Object.entries(headersToSet).forEach(([name, value]) => {
+            response.headers.set(name, value);
+          });
+        }
       },
     },
   });
